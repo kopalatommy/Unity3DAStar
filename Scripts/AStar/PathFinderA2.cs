@@ -148,6 +148,7 @@ public class PathFinderA2
         foreach (Node n in path)
         {
             vPath.Add(n.position);
+            //vPath.Add(getAvgNodePosition(getNodesFromLocation(n.position)[0, 0]));
         }
         resetNodes();
         Debug.Log(path.Count);
@@ -503,11 +504,20 @@ public class PathFinderA2
         return true;
     }
 
-    Vector3 getAvgNodePosition(Node n)
+    /*Vector3 getAvgNodePosition(Node n)
     {
         Vector3 pos = n.position;
         pos.x += Map.length * size / 2;
         pos.z -= Map.length * size / 2;
+        return pos;
+    }*/
+
+    Vector3 getAvgNodePosition(Node n)
+    {
+        Vector3 pos = n.position;
+        pos.x -= .25f;
+        pos.z -= .25f;
+        Debug.Log("Initial: " + n.position + " to " + pos);
         return pos;
     }
 }

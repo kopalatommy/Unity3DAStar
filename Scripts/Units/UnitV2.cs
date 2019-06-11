@@ -1,9 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using System;
 
-public class Unit : MonoBehaviour, IComparable<Unit>
+public class UnitV2 : MonoBehaviour
 {
     public Transform target;
     public int size;
@@ -29,7 +28,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
     private void Start()
     {
         StartCoroutine(followPath7());
-        UnitSelection.selection.playerUnits.Add(this);
+        UnitSelection.selection.playerUnitsV2.Add(this);
         occCode = UnitManager.manager.getOccCode(this);
         //requestPath(target.position);
     }
@@ -1586,6 +1585,6 @@ public class Unit : MonoBehaviour, IComparable<Unit>
         print(size * 2);
         float x = (n[0, 0].position.x + n[0, n.Length - 1].position.x) / 2;
         float z = (n[0, 0].position.z + n[n.Length - 1, 0].position.z) / 2;
-        return new Vector3(x, n[0,0].position.y, z);
+        return new Vector3(x, n[0, 0].position.y, z);
     }
 }

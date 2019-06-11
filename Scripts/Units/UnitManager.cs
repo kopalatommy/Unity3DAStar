@@ -35,6 +35,14 @@ public class UnitManager : MonoBehaviour
         return a;
     }
 
+    public int getOccCode(UnitV2 u)
+    {
+        int a = occCode;
+        unitCodes[a] = u;
+        occCode++;
+        return a;
+    }
+
     public void addUnitToUnitCodes(Unit u)
     {
         unitCodes[u.occCode] = u;

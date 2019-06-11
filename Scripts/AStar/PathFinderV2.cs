@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
-using System;
 using System.Threading;
+using System;
 
-public class PathFinder
+public class PathFinderV2
 {
     //Only set one true
     public bool done = false;
@@ -18,17 +19,18 @@ public class PathFinder
     public List<Node> path = null;
     public List<Node> simplified = null;
     public List<Vector3> vPath = null;
+    public List<Vector3> simplifiedVPath = null;
 
     public List<Node> critical = new List<Node>();
 
-    public PathFinder(Node _start, Node _goal)
+    public PathFinderV2(Node _start, Node _goal)
     {
         start = _start;
         goal = _goal;
         startThread();
     }
 
-    public PathFinder(PathRequest r)
+    public PathFinderV2(PathRequest r)
     {
         start = r.start;
         goal = r.end;
@@ -141,8 +143,8 @@ public class PathFinder
         }
         path.Reverse();
         simplifyPath();
-        path = simplified;
-        buildVPath();
+        //path = simplified;
+        //buildVPath();
         done = true;
     }
 
@@ -180,26 +182,6 @@ public class PathFinder
         while (true)
         {
             changed = false;
-            /*for (int i = simplified.Count - 1; i >= 0; i--)
-            {
-                if (changed || simplified.Count <= 2)
-                {
-                    break;
-                }
-                for (int j = 0; j < i; j++)
-                {
-                    //bool vb = viableChange(simplified[i], simplified[j]);
-                    //bool nn = Math.Abs(i - j) != 1;
-                    //bool mc = moveCost(simplified[i].position, simplified[j].position) <= moveCost(simplified.GetRange(j, i - j));
-                    if (viableChange(simplified[i], simplified[j]) && Math.Abs(i - j) != 1 && moveCost(simplified[i].position, simplified[j].position) <= moveCost(simplified.GetRange(j, i - j)))
-                    //if(vb && nn && mc)
-                    {
-                        simplified.RemoveRange(j+1, i-j-1);
-                        changed = true;
-                        break;
-                    }
-                }
-            }*/
             for (int i = 0; i < simplified.Count; i++)
             {
                 if (changed || simplified.Count <= 2)
@@ -222,6 +204,35 @@ public class PathFinder
             }
         }
         critical = simplified;
+
+        simplifiedVPath = new List<Vector3>();
+        foreach (Node n in  simplified)
+        {
+            simplifiedVPath.Add(getAvgNodePosition(getNodesFromLocation(n.position)[0,0]));
+        }
+
+        vPath = new List<Vector3>();
+        for (int i = 0; i < simplifiedVPath.Count - 1; i++)
+        {
+            Vector3 s = simplifiedVPath[i];
+            Vector3 e = simplifiedVPath[i + 1];
+            Vector3 last = s;
+            Vector3 current = s;
+            Vector3 change = (e - s) * .01f;
+
+            float distance = Vector3.Distance(e, current);
+            while (distance >= Vector3.Distance(e, current))
+            {
+                distance = Vector3.Distance(e, current);
+                current += change;
+                if (Map.instance.getNodeFromLocation(last) != Map.instance.getNodeFromLocation(current))
+                {
+                    last = current;
+                    vPath.Add(current);
+                }
+            }
+            vPath.RemoveAt(vPath.Count - 1);
+        }
     }
 
     /*void buildVPath()
@@ -368,19 +379,5 @@ public class PathFinder
             }
         }
         return nodes;
-    }
-}
-
-public struct PathResult
-{
-    public Vector3[] path;
-    public bool success;
-    public Action<Vector3[], bool> callback;
-
-    public PathResult(Vector3[] path, bool success, Action<Vector3[], bool> callback)
-    {
-        this.path = path;
-        this.success = success;
-        this.callback = callback;
     }
 }

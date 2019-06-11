@@ -8,7 +8,9 @@ public class UnitSelection : MonoBehaviour
     public static UnitSelection selection;
 
     public List<Unit> playerUnits = new List<Unit>();
+    public List<UnitV2> playerUnitsV2 = new List<UnitV2>();
     public List<Unit> selected = new List<Unit>();
+    public List<UnitV2> selectedV2 = new List<UnitV2>();
     bool isSelecting = false;
 
     Vector3 mousePos;

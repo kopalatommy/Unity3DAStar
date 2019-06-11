@@ -22,7 +22,7 @@ public class Map : MonoBehaviour
     public GameObject nodeMarker3;
 
     private List<PathRequest> pathRequestQueue = new List<PathRequest>();
-    PathFinder aStar;
+    PathFinderV2 aStar;
     PathFinderA1 aStarA1;
     PathFinderA2 aStarA2;
     List<Node> path = null;
@@ -262,7 +262,7 @@ public class Map : MonoBehaviour
                 {
                     //print("Starting regular");
                     aStarA2 = null;
-                    aStar = new PathFinder(req);
+                    aStar = new PathFinderV2(req);
                     StartCoroutine(RunAStar());
                 }
                 else if(req.specialCode == 1)
