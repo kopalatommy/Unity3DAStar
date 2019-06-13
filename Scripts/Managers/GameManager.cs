@@ -32,6 +32,7 @@ public class GameManager : MonoBehaviour
     void spawnUnits()
     {
         for (int i = 0; i < spawnLocs.Count; i++)
+        //for (int i = 0; i < 1; i++)
         {
             GameObject g = Instantiate(unitsToSpawn[i].gameObject);
             g.transform.position = spawnLocs[i].position;

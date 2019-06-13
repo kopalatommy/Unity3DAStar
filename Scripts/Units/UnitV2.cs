@@ -1585,6 +1585,6 @@ public class UnitV2 : MonoBehaviour
         print(size * 2);
         float x = (n[0, 0].position.x + n[0, n.Length - 1].position.x) / 2;
         float z = (n[0, 0].position.z + n[n.Length - 1, 0].position.z) / 2;
-        return new Vector3(x, n[0, 0].position.y, z);
+        return new Vector3(x - 0.01f, n[0, 0].position.y, z - 0.01f);
     }
 }

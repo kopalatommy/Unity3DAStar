@@ -334,41 +334,6 @@ public class PathFinder
 
         return currentCost;
     }
-
-    Vector3 getAvgNodePosition(Node n)
-    {
-        Vector3 pos = n.position;
-        pos.x -= .25f;
-        pos.z -= .25f;
-        Debug.Log("Initial: " + n.position + " to " + pos);
-        return pos;
-    }
-    Node[,] getNodesFromLocation(Vector3 pos)
-    {
-        float l = Map.length;
-
-        Node[,] nodes = new Node[width * 2, width * 2];
-
-        float x = pos.x - width + l;
-        float z = pos.z - width + l;
-
-        for (int q = 0; q < width * 2; q++)
-        {
-            for (int w = 0; w < width * 2; w++)
-            {
-                if (nodes[q, w] == null)
-                {
-                    Vector3 nPos = Vector3.zero;
-                    nPos.y = pos.y;
-                    nPos.x = x + (l * q);
-                    nPos.x -= Convert.ToSingle(Map.length * .5);
-                    nPos.z = z + (w * l);
-                    nodes[q, w] = Map.instance.getNodeFromLocation(nPos);
-                }
-            }
-        }
-        return nodes;
-    }
 }
 
 public struct PathResult

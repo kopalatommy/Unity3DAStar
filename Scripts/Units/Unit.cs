@@ -41,14 +41,14 @@ public class Unit : MonoBehaviour, IComparable<Unit>
         {
             test = false;
             //print("Nodes == null: " + currentNodes == null);
-            Node[,] nodes = getNodesFromLocation(transform.position);
+            Node[,] nodes = getNodesFromLocationV2(transform.position);
             foreach (Node n in nodes)
             {
                 GameObject g = Instantiate(Map.instance.nodeMarker);
                 g.transform.position = n.position;
                 g.transform.localScale = Vector3.one * Map.length;
             }
-            print(GetAvgPosition(getNodesFromLocation(transform.position)));
+            print(transform.position + ", " + GetAvgPosition(getNodesFromLocationV2(transform.position)));
         }
     }
 
@@ -1095,12 +1095,13 @@ public class Unit : MonoBehaviour, IComparable<Unit>
     List<Vector3> nvPath = new List<Vector3>();
     public Node[,] currentNodes = null;
     public int moveCode = -1;
+    List<GameObject> markers = new List<GameObject>();
     //Requests a new path where occupied nodes are unwalkable
     IEnumerator followPath7()
     {
         List<Vector3> vPath = new List<Vector3>();
         int index = 0;
-        currentNodes = getNodesFromLocation(transform.position);
+        currentNodes = getNodesFromLocationV2(transform.position);
         while (Map.instance == null || !Map.instance.mapIsReady)
         {
             yield return null;
@@ -1108,7 +1109,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
 
         Node next = Map.instance.getNodeFromLocation(transform.position);
         //vPath.Add(transform.position);
-        vPath.Add(GetAvgPosition(getNodesFromLocation(transform.position)));
+        vPath.Add(GetAvgPosition(getNodesFromLocationV2(transform.position)));
 
         while (true)
         {
@@ -1117,13 +1118,13 @@ public class Unit : MonoBehaviour, IComparable<Unit>
                 if (nvPath.Count > 0 && nvPath[0] != null)
                 {
                     gameObject.GetComponent<Renderer>().material.color = Color.yellow;
-                    if (nodesAreOK(getNodesFromLocation(nvPath[0])))
+                    if (nodesAreOK(getNodesFromLocationV2(nvPath[0])))
                     {
                         vPath = nvPath;
                         nvPath = null;
                         index = 0;
                         resetCurrentNodes(currentNodes);
-                        currentNodes = getNodesFromLocation(vPath[index]);
+                        currentNodes = getNodesFromLocationV2(vPath[index]);
                         fillCurrentNodes(currentNodes);
                         moving = true;
                     }
@@ -1138,8 +1139,9 @@ public class Unit : MonoBehaviour, IComparable<Unit>
                         }
                         nvPath = null;
                         print("A");*/
-                        requestPath(vPath[vPath.Count - 1], 10, 1);
                         while (nvPath == null) yield return null;
+                        print("Got new path");
+                        requestPath(vPath[vPath.Count - 1], 10, 1);
                     }
                     yield return null;
                     continue;
@@ -1159,7 +1161,29 @@ public class Unit : MonoBehaviour, IComparable<Unit>
             }
             else if ((index + 1) < vPath.Count)
             {
-                Node[,] nextNodes = getNodesFromLocation(vPath[index + 1]);
+
+                Node[,] nextNodes = getNodesFromLocationV2(vPath[index + 1]);
+                foreach (GameObject g in markers)
+                {
+                    Destroy(g);
+                }
+                markers.Clear();
+                foreach (Node n in currentNodes)
+                {
+                    GameObject g = Instantiate(Map.instance.nodeMarker2);
+                    g.transform.position = n.position;
+                    g.transform.localScale = Map.vLength;
+                    markers.Add(g);
+                }
+                foreach (Node n in nextNodes)
+                {
+                    GameObject g = Instantiate(Map.instance.nodeMarker);
+                    g.transform.position = n.position;
+                    g.transform.localScale = Map.vLength;
+                    markers.Add(g);
+                }
+
+
                 moving = true;
                 index += 1;//sets it to next index
                 if (!nodesAreOK(nextNodes) && nvPath == null)
@@ -1190,13 +1214,19 @@ public class Unit : MonoBehaviour, IComparable<Unit>
                             {
                                 yield return null;
                             }
+                            if (!nodesAreOK(nextNodes))
+                            {
+                                index--;
+                                yield return null;
+                                continue;
+                            }
                             moving = true;
                             continue;
                         }
                     }
 
                     index -= 1;//reverts it back to current index
-                    if (index - 1 > 0 && nodesAreOK(getNodesFromLocation(vPath[index - 1])) && nvPath == null)
+                    if (index - 1 > 0 && nodesAreOK(getNodesFromLocationV2(vPath[index - 1])) && nvPath == null)
                     {
                         //index -= 1;//sets it to previous index
                         gameObject.GetComponent<Renderer>().material.color = Color.magenta;
@@ -1215,18 +1245,37 @@ public class Unit : MonoBehaviour, IComparable<Unit>
                         yield return null;
                         continue;
                     }
-                    if (!nodesAreOK(getNodesFromLocation(vPath[index])))
+                    //if (!nodesAreOK(getNodesFromLocationV2(vPath[index])))
+                    if(!nodesAreOK(nextNodes))
                     {
                         print("Failed to wait");
+                        index--;
                         continue;
                     }
-                    if (nodesAreOK(getNodesFromLocation(vPath[index])))
+                    else
                     {
                         resetCurrentNodes(currentNodes);
-                        if (fillCurrentNodes(getNodesFromLocation(vPath[index])))
+                        //if (fillCurrentNodes(getNodesFromLocationV2(vPath[index])))
+                        if(fillCurrentNodes(nextNodes))
                         {
                             gameObject.GetComponent<Renderer>().material.color = Color.black;
-                            currentNodes = getNodesFromLocation(vPath[index]);
+                            //currentNodes = getNodesFromLocationV2(vPath[index]);
+                            currentNodes = nextNodes;
+                        }
+                        else
+                        {
+                            gameObject.GetComponent<Renderer>().material.color = Color.red;
+                            fillCurrentNodes(currentNodes);
+                            index -= 1;
+                        }
+                    }
+                    /*if (nodesAreOK(getNodesFromLocationV2(vPath[index])))
+                    {
+                        resetCurrentNodes(currentNodes);
+                        if (fillCurrentNodes(getNodesFromLocationV2(vPath[index])))
+                        {
+                            gameObject.GetComponent<Renderer>().material.color = Color.black;
+                            currentNodes = getNodesFromLocationV2(vPath[index]);
                         }
                         else
                         {
@@ -1240,8 +1289,9 @@ public class Unit : MonoBehaviour, IComparable<Unit>
                         gameObject.GetComponent<Renderer>().material.color = Color.red;
                         fillCurrentNodes(currentNodes);
                         index -= 1;
-                    }
+                    }*/
                 }
+
             }
             else
             {
@@ -1256,7 +1306,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
     {
         List<Vector3> vPath = new List<Vector3>();
         int index = 0;
-        currentNodes = getNodesFromLocation(transform.position);
+        currentNodes = getNodesFromLocationV2(transform.position);
         while (Map.instance == null || !Map.instance.mapIsReady)
         {
             yield return null;
@@ -1272,13 +1322,13 @@ public class Unit : MonoBehaviour, IComparable<Unit>
                 if (nvPath.Count > 0 && nvPath[0] != null)
                 {
                     gameObject.GetComponent<Renderer>().material.color = Color.yellow;
-                    if (nodesAreOK(getNodesFromLocation(nvPath[0])))
+                    if (nodesAreOK(getNodesFromLocationV2(nvPath[0])))
                     {
                         vPath = nvPath;
                         nvPath = null;
                         index = 0;
                         resetCurrentNodes(currentNodes);
-                        currentNodes = getNodesFromLocation(vPath[index]);
+                        currentNodes = getNodesFromLocationV2(vPath[index]);
                         fillCurrentNodes(currentNodes);
                     }
                     else
@@ -1313,7 +1363,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
             }
             else if ((index + 1) < vPath.Count)
             {
-                Node[,] nextNodes = getNodesFromLocation(vPath[index + 1]);
+                Node[,] nextNodes = getNodesFromLocationV2(vPath[index + 1]);
                 moving = true;
                 index += 1;//sets it to next index
                 if (!nodesAreOK(nextNodes) && nvPath == null)
@@ -1350,7 +1400,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
                     }
 
                     index -= 1;//reverts it back to current index
-                    if (index - 1 > 0 && nodesAreOK(getNodesFromLocation(vPath[index - 1])) && nvPath == null)
+                    if (index - 1 > 0 && nodesAreOK(getNodesFromLocationV2(vPath[index - 1])) && nvPath == null)
                     {
                         //index -= 1;//sets it to previous index
                         gameObject.GetComponent<Renderer>().material.color = Color.magenta;
@@ -1369,18 +1419,18 @@ public class Unit : MonoBehaviour, IComparable<Unit>
                         yield return null;
                         continue;
                     }
-                    if (!nodesAreOK(getNodesFromLocation(vPath[index])))
+                    if (!nodesAreOK(getNodesFromLocationV2(vPath[index])))
                     {
                         print("Failed to wait");
                         continue;
                     }
-                    if (nodesAreOK(getNodesFromLocation(vPath[index])))
+                    if (nodesAreOK(getNodesFromLocationV2(vPath[index])))
                     {
                         resetCurrentNodes(currentNodes);
-                        if (fillCurrentNodes(getNodesFromLocation(vPath[index])))
+                        if (fillCurrentNodes(getNodesFromLocationV2(vPath[index])))
                         {
                             gameObject.GetComponent<Renderer>().material.color = Color.black;
-                            currentNodes = getNodesFromLocation(vPath[index]);
+                            currentNodes = getNodesFromLocationV2(vPath[index]);
                         }
                         else
                         {
@@ -1429,9 +1479,9 @@ public class Unit : MonoBehaviour, IComparable<Unit>
             }*/
             if (n == null)
             {
-                continue;
+                return false;
             }
-            if ((n.isOccupied && (n.occCode != occCode && n.occCode != -1)))
+            if (n.isOccupied && (n.occCode != occCode && n.occCode != -1))
             {
                 return false;
             }
@@ -1476,7 +1526,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
         }
     }
 
-    Node[,] getNodesFromLocation(Vector3 pos)
+    Node[,] getNodesFromLocation(Vector3 pos , int i)
     {
         float l = Map.length;
 
@@ -1484,6 +1534,32 @@ public class Unit : MonoBehaviour, IComparable<Unit>
 
         float x = pos.x - size + l;
         float z = pos.z - size + l;
+
+        for (int q = 0; q < size * 2; q++)
+        {
+            for (int w = 0; w < size * 2; w++)
+            {
+                if (nodes[q, w] == null)
+                {
+                    Vector3 nPos = Vector3.zero;
+                    nPos.y = pos.y;
+                    nPos.x = x + (l * q);
+                    nPos.z = z + (w * l);
+                    nodes[q, w] = Map.instance.getNodeFromLocation(nPos);
+                }
+            }
+        }
+        return nodes;
+    }
+
+    Node[,] getNodesFromLocationV2(Vector3 pos)
+    {
+        float l = Map.length;
+
+        Node[,] nodes = new Node[size * 2, size * 2];
+
+        float x = pos.x - (size / 2);
+        float z = pos.z - (size / 2);
 
         for (int q = 0; q < size * 2; q++)
         {
@@ -1579,13 +1655,10 @@ public class Unit : MonoBehaviour, IComparable<Unit>
         }
     }
 
-    Node[][] nTest = new Node[3][];
     Vector3 GetAvgPosition(Node[,] n)
     {
-        print(nTest[0].Length - 1);
-        print(size * 2);
-        float x = (n[0, 0].position.x + n[0, n.Length - 1].position.x) / 2;
-        float z = (n[0, 0].position.z + n[n.Length - 1, 0].position.z) / 2;
-        return new Vector3(x, n[0,0].position.y, z);
+        float x = ((n[0, 0].position.x + n[0, n.GetLength(n.Rank - 1) - 1].position.x) / 2) + Map.length / 2;
+        float z = ((n[0, 0].position.z + n[n.GetLength(n.Rank - 1) - 1, 0].position.z) / 2) + Map.length / 2;
+        return new Vector3(x - 0.01f, n[0, 0].position.y, z - 0.01f);
     }
 }

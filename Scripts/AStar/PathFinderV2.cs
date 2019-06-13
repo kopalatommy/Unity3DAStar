@@ -40,7 +40,6 @@ public class PathFinderV2
 
     public void startThread()
     {
-        Debug.Log("Unit size = " + width);
         resetNodes();//reset all nodes to ensure correct path has been made
         ThreadStart startT = new ThreadStart(AStar);
         thread = new Thread(startT);
@@ -208,7 +207,7 @@ public class PathFinderV2
         simplifiedVPath = new List<Vector3>();
         foreach (Node n in  simplified)
         {
-            simplifiedVPath.Add(getAvgNodePosition(getNodesFromLocation(n.position)[0,0]));
+            simplifiedVPath.Add(GetAvgPosition(getNodesFromLocation(n.position)));
         }
 
         vPath = new List<Vector3>();
@@ -233,6 +232,10 @@ public class PathFinderV2
             }
             vPath.RemoveAt(vPath.Count - 1);
         }
+        Vector3 temp = vPath[vPath.Count - 1];
+        vPath.RemoveAt(vPath.Count - 1);
+        vPath.Add(GetAvgPosition(getNodesFromLocation(temp)));
+        Debug.Log(vPath.Count);
     }
 
     /*void buildVPath()
@@ -346,13 +349,11 @@ public class PathFinderV2
         return currentCost;
     }
 
-    Vector3 getAvgNodePosition(Node n)
+    Vector3 GetAvgPosition(Node[,] n)
     {
-        Vector3 pos = n.position;
-        pos.x -= .25f;
-        pos.z -= .25f;
-        Debug.Log("Initial: " + n.position + " to " + pos);
-        return pos;
+        float x = ((n[0, 0].position.x + n[0, n.GetLength(n.Rank - 1) - 1].position.x) / 2) + Map.length / 2;
+        float z = ((n[0, 0].position.z + n[n.GetLength(n.Rank - 1) - 1, 0].position.z) / 2) + Map.length / 2;
+        return new Vector3(x - 0.01f, n[0, 0].position.y, z - 0.01f);
     }
     Node[,] getNodesFromLocation(Vector3 pos)
     {
@@ -360,8 +361,8 @@ public class PathFinderV2
 
         Node[,] nodes = new Node[width * 2, width * 2];
 
-        float x = pos.x - width + l;
-        float z = pos.z - width + l;
+        float x = pos.x - (width / 2);
+        float z = pos.z - (width / 2);
 
         for (int q = 0; q < width * 2; q++)
         {
@@ -372,7 +373,6 @@ public class PathFinderV2
                     Vector3 nPos = Vector3.zero;
                     nPos.y = pos.y;
                     nPos.x = x + (l * q);
-                    nPos.x -= Convert.ToSingle(Map.length * .5);
                     nPos.z = z + (w * l);
                     nodes[q, w] = Map.instance.getNodeFromLocation(nPos);
                 }

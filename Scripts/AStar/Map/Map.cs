@@ -43,6 +43,8 @@ public class Map : MonoBehaviour
     public int x2 = 0;
     public int z2 = 0;
 
+    public static Vector3 vLength = Vector3.one * length;
+
     private void Start()
     {
         instance = this;
@@ -219,6 +221,33 @@ public class Map : MonoBehaviour
         r.start = start;
         r.end = goal;
         r.requestee = u;
+        r.size = u.size;
+        r.priority = p;
+        r.specialCode = sc;
+        if (pathRequestQueue.Count > 0)
+        {
+            for (int i = pathRequestQueue.Count - 1; i >= 0; i--)
+            {
+                if (pathRequestQueue[i].priority < p)
+                {
+                    pathRequestQueue.Insert(i, r);
+                    return;
+                }
+            }
+            pathRequestQueue.Add(r);
+        }
+        else
+        {
+            pathRequestQueue.Add(r);
+        }
+    }
+
+    public void requestPath(Node start, Node goal, UnitV2 u, int p, int sc)
+    {
+        PathRequest r = new PathRequest();
+        r.start = start;
+        r.end = goal;
+        r.requesteeV2 = u;
         r.size = u.size;
         r.priority = p;
         r.specialCode = sc;
@@ -716,6 +745,7 @@ public struct PathRequest
     public Node start;
     public Node end;
     public Unit requestee;
+    public UnitV2 requesteeV2;
     public bool occupied;
     public int size;
     //Defualt to 0
