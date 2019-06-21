@@ -22,6 +22,7 @@ public class Map : MonoBehaviour
     public GameObject nodeMarker3;
 
     private List<PathRequest> pathRequestQueue = new List<PathRequest>();
+    private List<GroupPathRequest> pathRequests = new List<GroupPathRequest>();
     PathFinderV2 aStar;
     PathFinderA1 aStarA1;
     PathFinderA2 aStarA2;
@@ -49,7 +50,8 @@ public class Map : MonoBehaviour
     {
         instance = this;
         StartCoroutine(setUpMap());
-        StartCoroutine(buildPaths());
+        //StartCoroutine(buildPaths());
+        StartCoroutine(buildPathsV2());
     }
 
     private void Update()
@@ -281,6 +283,7 @@ public class Map : MonoBehaviour
         {
             if (vPath == null && !building && pathRequestQueue.Count > 0)
             {
+                print("Queue count: " + pathRequestQueue.Count);
                 building = true;
                 PathRequest req = pathRequestQueue[0];
                 requestee = req.requestee;
@@ -294,7 +297,7 @@ public class Map : MonoBehaviour
                     aStar = new PathFinderV2(req);
                     StartCoroutine(RunAStar());
                 }
-                else if(req.specialCode == 1)
+                else if (req.specialCode == 1)
                 {
                     //print("Starting A1");
                     aStar = null;
@@ -323,11 +326,92 @@ public class Map : MonoBehaviour
                 aStarA2 = null;
                 yield return null;
             }
-            else if (aStar != null && aStar.failed && building)
+            else if (building)
             {
-                //print("Failed to find path");
-                vPath = null;
-                building = false;
+                if (aStar != null && aStar.failed)
+                {
+                    //print("Failed to find path a1");
+                    vPath = null;
+                    building = false;
+                    aStar = null;
+                }
+                else if (aStarA2 != null && aStarA2.failed)
+                {
+                    //print("Failed to find path a2");
+                    vPath = null;
+                    building = false;
+                    aStarA2 = null;
+                }
+            }
+            yield return null;
+        }
+    }
+
+    public void receiveBatchPathRequest(GroupPathRequest req)
+    {
+        pathRequests.Add(req);
+    }
+
+    IEnumerator buildPathsV2()
+    {
+        while (!mapIsReady)
+        {
+            yield return null;
+        }
+        while (true)
+        {
+            if (pathRequests.Count > 0)
+            {
+                List<List<Vector3>> destinations = new List<List<Vector3>>();
+                for (int i = 0; i < pathRequests[0].requests.Count; i++)
+                {
+                    PathRequest req = pathRequests[0].requests[i];
+
+                    //Start pathfinding
+                    if (req.specialCode == 0)
+                    {
+                        PathFinderV2 astar = new PathFinderV2(req);
+                        while (!astar.done && !astar.failed)
+                        {
+                            yield return null;
+                        }
+                        if (astar.failed)
+                        {
+                            pathRequests[0].requests.Remove(req);
+                            print("Pathfinding failed");
+                            continue;
+                        }
+                        else
+                        {
+                            destinations.Add(astar.vPath);
+                        }
+                    }
+                    else if (req.specialCode == 1)
+                    {
+                        PathFinderA1 astar = new PathFinderA1(req);
+                        while (!astar.done && !astar.failed)
+                        {
+                            yield return null;
+                        }
+                        if (astar.failed)
+                        {
+                            pathRequests[0].requests.Remove(req);
+                            print("Pathfinding failed");
+                            continue;
+                        }
+                        else
+                        {
+                            destinations.Add(astar.vPath);
+                        }
+                    }
+                }
+                for (int i = 0; i < destinations.Count; i++)
+                {
+                    print(destinations[i].Count);
+                    pathRequests[0].requestees[i].getPath(destinations[i]);
+                }
+                pathRequests.RemoveAt(0);
+                yield return null;
             }
             yield return null;
         }
@@ -362,7 +446,7 @@ public class Map : MonoBehaviour
         {
             print("Pathfinding failed");
         }
-        print("Finished A2");
+        //print("Finished A2");
         vPath = aStarA2.vPath;
         testList = aStarA2.critical;
         StopCoroutine(RunAStarA1());
@@ -376,6 +460,7 @@ public class Map : MonoBehaviour
         if (x >= xSize * (1 / length) || z >= zSize * (1 / length) || x < 0 || z < 0)
         {
             print("Bad location " + location);
+            return null;
         }
         return nodes[Mathf.FloorToInt(x), Mathf.FloorToInt(z)];
     }
@@ -404,7 +489,6 @@ public class Map : MonoBehaviour
         }
     }
 
-    //Review, replace try catch
     public static List<Node> getNeighbors(Node n)
     {
         List<Node> neighbors = new List<Node>();
@@ -738,6 +822,31 @@ public class Map : MonoBehaviour
             num++;
         }
     }
+
+    public void addGroupPathRequest(Vector3 _targetPos, List<Unit> _requestUnits)
+    {
+        StartCoroutine(buildGroupPathRequest(_targetPos, _requestUnits));
+    }
+
+    IEnumerator buildGroupPathRequest(Vector3 t, List<Unit> lst)
+    {
+        PlacementSearch search = new PlacementSearch(lst, Map.instance.getNodeFromLocation(t));
+        while (search.status == 0) yield return null;
+        if (search.status == 2)
+        {
+            print("Search failed");
+            StopCoroutine(buildGroupPathRequest(t, lst));
+        }
+        GroupPathRequest req = new GroupPathRequest();
+        req.requests = new List<PathRequest>();
+        req.requestees = UnitSelection.selection.playerUnits;
+        for (int i = 0; i < UnitSelection.selection.playerUnits.Count; i++)
+        {
+            PathRequest r = UnitSelection.selection.playerUnits[i].makePathRequest(search.movePos[i], 0, 0);
+            req.requests.Add(r);
+        }
+        receiveBatchPathRequest(req);
+    }
 }
 
 public struct PathRequest
@@ -751,5 +860,13 @@ public struct PathRequest
     //Defualt to 0
     public int priority;
     public int specialCode;
+    public Action<List<Vector3>> callback;
+}
+
+public struct GroupPathRequest
+{
+    public List<Unit> requestees;
+    public List<PathRequest> requests;
+    public Vector3 targetPos;
 }
 

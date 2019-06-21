@@ -26,6 +26,9 @@ public class Node : IComparable<Node>
     //PathFinding
     public bool critical = false;
 
+    //Search algorithm
+    public bool claimed = false;
+
     public Node(bool _walkable, Vector3 pos, int xIn, int zIn, int mCost)
     {
         position = pos;
@@ -41,6 +44,7 @@ public class Node : IComparable<Node>
     }
 
     // AStar methods
+    //Full cost
     public int fCost
     {
         get
@@ -58,8 +62,4 @@ public class Node : IComparable<Node>
         }
         return compare;
     }
-    ////////////////////////////////////////////////////////
-    
-
-
 }

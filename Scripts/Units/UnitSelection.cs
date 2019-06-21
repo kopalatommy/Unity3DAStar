@@ -28,18 +28,25 @@ public class UnitSelection : MonoBehaviour
         {
             mousePos2 = Input.mousePosition;
 
-            foreach (Unit u in selected)
+            for (int i = 0; i < selected.Count; i++)
             {
-                u.setMarker(false);
+                if (selected[i] == null)
+                {
+                    selected.RemoveAt(i);
+                    i = 1000;
+                    continue;
+                }
+                selected[i].setMarker(false);
             }
-            selected = new List<Unit>();
             isSelecting = true;
+            selected = new List<Unit>();
         }
 
         if (Input.GetMouseButtonUp(1))
         {
             foreach (Unit u in playerUnits)
             {
+                if (u == null) continue;
                 if (inBounds(u.gameObject))
                 {
                     selected.Add(u);
@@ -53,6 +60,7 @@ public class UnitSelection : MonoBehaviour
         {
             foreach (Unit u in playerUnits)
             {
+                if (u == null) continue;
                 if (inBounds(u.gameObject))
                 {
                     u.setMarker(true);
@@ -70,7 +78,8 @@ public class UnitSelection : MonoBehaviour
             RaycastHit hit = new RaycastHit();
             if (Physics.Raycast(ray, out hit))
             {
-                sendMoveLoc(hit.point);
+                //sendMoveLoc(hit.point);
+                Map.instance.addGroupPathRequest(hit.point, selected);
             }
         }
     }

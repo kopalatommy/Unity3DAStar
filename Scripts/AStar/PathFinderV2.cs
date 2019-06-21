@@ -235,7 +235,6 @@ public class PathFinderV2
         Vector3 temp = vPath[vPath.Count - 1];
         vPath.RemoveAt(vPath.Count - 1);
         vPath.Add(GetAvgPosition(getNodesFromLocation(temp)));
-        Debug.Log(vPath.Count);
     }
 
     /*void buildVPath()

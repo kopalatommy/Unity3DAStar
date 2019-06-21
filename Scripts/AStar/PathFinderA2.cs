@@ -23,6 +23,7 @@ public class PathFinderA2
 
     public PathFinderA2(PathRequest r)
     {
+        //Debug.Log(nodesAreOK(getNodesFromLocation(r.start.position)));
         start = r.start;
         goal = r.end;
         size = r.requestee.size;
@@ -63,6 +64,13 @@ public class PathFinderA2
             return;
         }
 
+        if (!nodesAreOK(getNodesFromLocation(start.position)) || !nodesAreOK(getNodesFromLocation(goal.position)))
+        {
+            Debug.Log("Start or goal is not fully walkable, pathfinding cannot be completed");
+            failed = true;
+            return;
+        }
+
         MinHeap<Node> openSet = new MinHeap<Node>();
         HashSet<Node> closedSet = new HashSet<Node>();
         openSet.addItem(start);
@@ -79,9 +87,13 @@ public class PathFinderA2
                 break;
             }
 
-            if (size > getDist(currentNode))
+            /*if (size > getDist(currentNode))
             {
                 Debug.Log("Ignoring start node");
+                continue;
+            }*/
+            if (!nodesAreOK(getNodesFromLocation(currentNode.position)))
+            {
                 continue;
             }
 
@@ -139,8 +151,8 @@ public class PathFinderA2
             currentNode = currentNode.parent;
         }
         path.Reverse();
-        Debug.Log("Path success");
-        Debug.Log(path.Count);
+        //Debug.Log("Path success");
+        //Debug.Log(path.Count);
         /*simplifyPath();
         path = simplified;*/
         //buildVPath();
@@ -151,7 +163,6 @@ public class PathFinderA2
             //vPath.Add(getAvgNodePosition(getNodesFromLocation(n.position)[0, 0]));
         }
         resetNodes();
-        Debug.Log(path.Count);
         done = true;
     }
 
@@ -258,7 +269,7 @@ public class PathFinderA2
             }
             vPath.RemoveAt(vPath.Count - 1);
         }
-        Vector3 temp = getAvgNodePosition(getNodesFromLocation(vPath[vPath.Count - 1])[0, 0]);
+        Vector3 temp = GetAvgPosition(getNodesFromLocation(vPath[vPath.Count - 1]));
         vPath.RemoveAt(vPath.Count - 1);
         vPath.Add(temp);
     }
@@ -467,8 +478,8 @@ public class PathFinderA2
 
         Node[,] nodes = new Node[size * 2, size * 2];
 
-        float x = pos.x - size + l;
-        float z = pos.z - size + l;
+        float x = pos.x - (size / 2);
+        float z = pos.z - (size / 2);
 
         for (int q = 0; q < size * 2; q++)
         {
@@ -480,6 +491,7 @@ public class PathFinderA2
                     nPos.y = pos.y;
                     nPos.x = x + (l * q);
                     nPos.z = z + (w * l);
+                    if (nPos.x >= 100 || nPos.z >= 100) return null;
                     nodes[q, w] = Map.instance.getNodeFromLocation(nPos);
                 }
             }
@@ -489,11 +501,12 @@ public class PathFinderA2
 
     bool nodesAreOK(Node[,] nodes)
     {
+        if (nodes == null) return false;
         foreach (Node n in nodes)
         {
             if (n == null)
             {
-                continue;
+                return false;
             }
             if ((n.isOccupied && (n.occCode != code && n.occCode != -1)))
             {
@@ -512,12 +525,10 @@ public class PathFinderA2
         return pos;
     }*/
 
-    Vector3 getAvgNodePosition(Node n)
+    Vector3 GetAvgPosition(Node[,] n)
     {
-        Vector3 pos = n.position;
-        pos.x -= .25f;
-        pos.z -= .25f;
-        Debug.Log("Initial: " + n.position + " to " + pos);
-        return pos;
+        float x = ((n[0, 0].position.x + n[0, n.GetLength(n.Rank - 1) - 1].position.x) / 2) + Map.length / 2;
+        float z = ((n[0, 0].position.z + n[n.GetLength(n.Rank - 1) - 1, 0].position.z) / 2) + Map.length / 2;
+        return new Vector3(x - 0.01f, n[0, 0].position.y, z - 0.01f);
     }
 }
