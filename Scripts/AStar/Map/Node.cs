@@ -38,6 +38,22 @@ public class Node : IComparable<Node>
         zIndex = zIn;
     }
 
+    public Node(nodeData n)
+    {
+        position = new Vector3(n.x, n.y, n.z);
+
+        xIndex = n.xIndex;
+        zIndex = n.zIndex;
+
+        cushion = n.cushion;
+
+        walkable = n.isWalkable;
+
+        moveCost = n.moveCost;
+
+        critical = n.critical;
+    }
+
     public void revert()
     {
 

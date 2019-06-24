@@ -54,7 +54,7 @@ public class UnitSearch
 
             foreach (Node n in Map.getNeighbors(current))
             {
-                if (!closedSet.Contains(n) && Vector3.Distance(start.position, n.position) <= range)
+                if (n != null && !closedSet.Contains(n) && Vector3.Distance(start.position, n.position) <= range)
                 {
                     if (!openSet.Contains(n))
                     {

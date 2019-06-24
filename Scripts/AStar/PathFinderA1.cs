@@ -339,8 +339,8 @@ public class PathFinderA1
         int x = n.xIndex;
         int z = n.zIndex;
         float length = Map.length;
-        int xSize = Map.instance.xSize;
-        int zSize = Map.instance.zSize;
+        int xSize = Map.xSize;
+        int zSize = Map.zSize;
 
         while (true)
         {

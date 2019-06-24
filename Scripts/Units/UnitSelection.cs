@@ -72,14 +72,19 @@ public class UnitSelection : MonoBehaviour
             }
         }
 
-        if (Input.GetMouseButtonDown(2))
+        if (Input.GetMouseButtonDown(2) && selected.Count > 0)
         {
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit = new RaycastHit();
             if (Physics.Raycast(ray, out hit))
             {
+                //print("Started search, " + selected.Count);
                 //sendMoveLoc(hit.point);
                 Map.instance.addGroupPathRequest(hit.point, selected);
+            }
+            else
+            {
+                print("Did not hit");
             }
         }
     }

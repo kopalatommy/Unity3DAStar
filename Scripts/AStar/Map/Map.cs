@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using System.Threading;
 
 public class Map : MonoBehaviour
 {
@@ -9,8 +10,8 @@ public class Map : MonoBehaviour
 
     public bool makeNewMap = false;
     public string mapName;
-    public int xSize = 0;
-    public int zSize = 0;
+    public static int xSize = 0;
+    public static int zSize = 0;
     public static float length = .5f;
     public static Node[,] nodes;
 
@@ -46,6 +47,8 @@ public class Map : MonoBehaviour
 
     public static Vector3 vLength = Vector3.one * length;
 
+    public bool testClaimed = false;
+
     private void Start()
     {
         instance = this;
@@ -54,8 +57,31 @@ public class Map : MonoBehaviour
         StartCoroutine(buildPathsV2());
     }
 
+    public bool showWalkableB = false;
     private void Update()
     {
+        if (testClaimed)
+        {
+            testClaimed = false;
+            foreach (Node n in nodes)
+            {
+                if (n.walkable)
+                {
+                    if (n.claimed)
+                    {
+                        GameObject g = Instantiate(nodeMarker3);
+                        g.transform.position = n.position;
+                        g.transform.localScale = vLength;
+                    }
+                    else
+                    {
+                        GameObject g = Instantiate(nodeMarker2);
+                        g.transform.position = n.position;
+                        g.transform.localScale = vLength;
+                    }
+                }
+            }
+        }
         if (create)
         {
             create = !create;
@@ -89,11 +115,10 @@ public class Map : MonoBehaviour
             }
             printedNodes = new List<GameObject>();
         }
-        if (buildTestPath)
+        if (showWalkableB)
         {
-            buildTestPath = false;
-            //testPathA1(nodes[x1,z1], nodes[x2,z2], testCode);
-            GetComponent<PathFinderA1Test>().requestPath(nodes[x1, z1], nodes[x2, z2], 1, testCode);
+            showWalkableB = false;
+            showWalkable();
         }
     }
 
@@ -114,45 +139,150 @@ public class Map : MonoBehaviour
         Debug.Log("Count: " + count);
     }
 
+    private mapData buildData;
     IEnumerator setUpMap()
     {
-        if (makeNewMap)
+        if (DataSaver.instance.mapExists(mapName) && !makeNewMap)
         {
-            CreateMap m = new CreateMap(makeNewMap,length, xSize, zSize, mapName);
-            while (!m.mapIsReady)
+            CreateMap create = new CreateMap(false, length, xSize, zSize, mapName);
+            while (create.totalNodes == 0) yield return null;
+            //Debug.Log("Total nodes: " + create.totalNodes);
+            //Debug.Log("Created nodes: " + create.createdNodes);
+            while (!create.mapIsReady)
             {
+                CameraUI.instance.progressText.text = create.createdNodes + "/" + create.totalNodes;
+                CameraUI.instance.progressBar.value = create.createdNodes / create.totalNodes;
                 yield return null;
             }
-            nodes = m.nodes;
-            foreach (Node n in nodes)
-            {
-                foreach (Node o in Map.getNeighbors(n))
-                {
-                    if (!o.walkable)
-                    {
-                        n.critical = true;
-                        break;
-                    }
-                }
-            }
+            CameraUI.instance.progressText.text = create.createdNodes + "/" + create.totalNodes;
+            CameraUI.instance.progressBar.value = create.createdNodes / create.totalNodes;
+
+            nodes = create.nodes;
+            xSize = create.xSize;
+            zSize = create.zSize;
+            //print("Node count: " + nodes.Length);
+
+            GameObject g = Instantiate((GameObject)Resources.Load(mapName));
+            g.transform.position = new Vector3(xSize / 2, 0, zSize / 2);
+
+            g = Instantiate(nodeMarker);
+            g.transform.position = nodes[0, 0].position;
+            g.transform.localScale = vLength;
+
+            g = Instantiate(nodeMarker2);
+            g.transform.position = nodes[0, nodes.GetLength(0) - 1].position;
+            g.transform.localScale = vLength;
+
+            g = Instantiate(nodeMarker3);
+            g.transform.position = nodes[nodes.GetLength(0) - 1, 0].position;
+            g.transform.localScale = vLength;
+
+            g = Instantiate(nodeMarker2);
+            g.transform.position = nodes[nodes.GetLength(0) - 1, nodes.GetLength(nodes.Rank - 1) - 1].position;
+            g.transform.localScale = vLength;
+
+            print("Finished loading map");
             mapIsReady = true;
-            //showCost();
         }
         else
         {
+            print("Making new map");
+            //print("Length: " + length + ", x size: " + xSize + ", Z size: " + zSize);
+            if (xSize == 0 || zSize == 0)
+            {
+                xSize = 500;
+                zSize = 500;
+            }
             CreateMap m = new CreateMap(makeNewMap, length, xSize, zSize, mapName);
-            while (!m.mapIsReady)
+            while (m.totalNodes == 0)
             {
                 yield return null;
             }
+            while (!m.mapIsReady)
+            {
+                CameraUI.instance.progressText.text = m.touchedNodes + "/" + m.totalNodes;
+                CameraUI.instance.progressBar.value = m.touchedNodes / m.totalNodes;
+                yield return null;
+            }
+            CameraUI.instance.progressText.text = m.touchedNodes + "/" + m.totalNodes;
+            CameraUI.instance.progressBar.value = m.touchedNodes / m.totalNodes;
             nodes = m.nodes;
-            mapIsReady = true;
-            GameObject g = Instantiate((GameObject)Resources.Load(mapName));
-            g.transform.position = new Vector3(xSize / 2, 0, zSize / 2);
-            g = Instantiate(nodeMarker);
+            //print("Node count: " + nodes.Length);
+
+            GameObject g = Instantiate(nodeMarker);
             g.transform.position = nodes[0, 0].position;
-            g.transform.localScale = Vector3.one * length;
+            g.transform.localScale = vLength;
+
+            g = Instantiate(nodeMarker2);
+            g.transform.position = nodes[0, nodes.GetLength(0) - 1].position;
+            g.transform.localScale = vLength;
+
+            g = Instantiate(nodeMarker3);
+            g.transform.position = nodes[nodes.GetLength(0) - 1, 0].position;
+            g.transform.localScale = vLength;
+
+            g = Instantiate(nodeMarker2);
+            g.transform.position = nodes[nodes.GetLength(0) - 1, nodes.GetLength(nodes.Rank - 1) - 1].position;
+            g.transform.localScale = vLength;
+
+
+            //Save map
+            mapData mData = new mapData();
+            nodeData[,] data = new nodeData[(int)(xSize * (1 / length)), (int)(zSize * (1 / length))];
+            for (int i = 0; i < (xSize * (1 / length)); i++)
+            {
+                for (int j = 0; j < (zSize * (1 / length)); j++)
+                {
+                    nodeData n = new nodeData();
+                    n.populate(nodes[i, j]);
+                    data[i, j] = n;
+                }
+                yield return null;
+            }
+            mData.mName = mapName;
+            mData.mapNodes = data;
+            mData.xSize = xSize;
+            mData.zSize = zSize;
+            mData.nodeLength = length;
+
+            //DataSaver.instance.saveMap(mData);
+
+            mapIsReady = true;
+            print("Finished making and saving map");
         }
+    }
+
+    void buildMap()
+    {
+
+    }
+
+    int createdNodes = 0;
+    float maxNodes = 0;
+    string dataPath = "";
+    private void loadMap()
+    {
+        print("Starting load map");
+        mapData mData = DataSaver.instance.getMap(mapName, dataPath);
+
+        print("Read in mData");
+
+        length = mData.nodeLength;
+        xSize = mData.xSize;
+        zSize = mData.zSize;
+
+        maxNodes = (xSize * (1 / length)) * (zSize * (1 / length));
+
+        nodes = new Node[(int)(xSize * (1 / length)), (int)(zSize * (1 / length))];
+        for (int i = 0; i < xSize * (1 / length); i++)
+        {
+            for (int j = 0; j < zSize * (1 / length); j++)
+            {
+                createdNodes++;
+                nodes[i, j] = new Node(mData.mapNodes[i, j]);
+            }
+        }
+        mapIsReady = true;
     }
 
     void showCost()
@@ -358,6 +488,7 @@ public class Map : MonoBehaviour
         {
             yield return null;
         }
+        //print("Started building paths");
         while (true)
         {
             if (pathRequests.Count > 0)
@@ -407,7 +538,7 @@ public class Map : MonoBehaviour
                 }
                 for (int i = 0; i < destinations.Count; i++)
                 {
-                    print(destinations[i].Count);
+                    //print(destinations[i].Count);
                     pathRequests[0].requestees[i].getPath(destinations[i]);
                 }
                 pathRequests.RemoveAt(0);
@@ -457,6 +588,9 @@ public class Map : MonoBehaviour
         float x = getClosestFloat(location.x * (1 / length));
         float z = getClosestFloat(location.z * (1 / length));
 
+        //print("X size: " + xSize);
+        //print("Z size: " + zSize);
+
         if (x >= xSize * (1 / length) || z >= zSize * (1 / length) || x < 0 || z < 0)
         {
             print("Bad location " + location);
@@ -495,48 +629,48 @@ public class Map : MonoBehaviour
         int xIndex = n.xIndex;
         int zIndex = n.zIndex;
 
-        if (xIndex < 200 && xIndex >= 1 && zIndex < 200 && zIndex >= 1)
+        if (xIndex < (xSize * (1/length)) && xIndex >= 1 && zIndex < (zSize * (1 / length)) && zIndex >= 1)
         {
             neighbors.Add(nodes[xIndex - 1, zIndex - 1]);
         }
 
-        if (xIndex < 200 && xIndex >= 0 && zIndex < 199 && zIndex >= 0)
+        if (xIndex < (xSize * (1 / length)) && xIndex >= 0 && zIndex < (zSize * (1 / length)) - 1 && zIndex >= 0)
         {
             neighbors.Add(nodes[xIndex, zIndex + 1]);
         }
 
 
-        if (xIndex < 200 && xIndex >= 0 && zIndex < 200 && zIndex >= 1)
+        if (xIndex < (xSize * (1 / length)) && xIndex >= 0 && zIndex < (zSize * (1 / length)) && zIndex >= 1)
         {
             neighbors.Add(nodes[xIndex, zIndex - 1]);
         }
 
 
-        if (xIndex < 199 && xIndex >= 1 && zIndex < 200 && zIndex >= 0)
+        if (xIndex < (xSize * (1 / length)) - 1 && xIndex >= 1 && zIndex < (zSize * (1 / length)) && zIndex >= 0)
         {
             neighbors.Add(nodes[xIndex + 1, zIndex]);
         }
 
 
-        if (xIndex < 200 && xIndex >= 1 && zIndex < 200 && zIndex >= 0)
+        if (xIndex < (xSize * (1 / length)) && xIndex >= 1 && zIndex < (zSize * (1 / length)) && zIndex >= 0)
         {
             neighbors.Add(nodes[xIndex - 1, zIndex]);
         }
 
 
-        if (xIndex < 199 && xIndex >= 0 && zIndex < 199 && zIndex >= 0)
+        if (xIndex < (xSize * (1 / length)) - 1 && xIndex >= 0 && zIndex < (zSize * (1 / length)) - 1 && zIndex >= 0)
         {
             neighbors.Add(nodes[xIndex + 1, zIndex + 1]);
         }
 
 
-        if (xIndex < 199 && xIndex >= 0 && zIndex < 200 && zIndex >= 1)
+        if (xIndex < (xSize * (1 / length)) - 1 && xIndex >= 0 && zIndex < (zSize * (1 / length)) && zIndex >= 1)
         {
             neighbors.Add(nodes[xIndex + 1, zIndex - 1]);
         }
 
 
-        if (xIndex < 200 && xIndex >= 1 && zIndex < 199 && zIndex >= 0)
+        if (xIndex < (xSize * (1 / length)) && xIndex >= 1 && zIndex < (zSize * (1 / length)) - 1 && zIndex >= 0)
         {
             neighbors.Add(nodes[xIndex - 1, zIndex + 1]);
         }
@@ -683,8 +817,6 @@ public class Map : MonoBehaviour
         int x = n.xIndex;
         int z = n.zIndex;
         float length = Map.length;
-        int xSize = Map.instance.xSize;
-        int zSize = Map.instance.zSize;
 
         while (true)
         {
@@ -837,15 +969,41 @@ public class Map : MonoBehaviour
             print("Search failed");
             StopCoroutine(buildGroupPathRequest(t, lst));
         }
+        print("Finished search");
         GroupPathRequest req = new GroupPathRequest();
         req.requests = new List<PathRequest>();
         req.requestees = UnitSelection.selection.playerUnits;
-        for (int i = 0; i < UnitSelection.selection.playerUnits.Count; i++)
+        //print("Movement locations: " + search.movePos.Count);
+        if (search.movePos.Count != lst.Count)
         {
-            PathRequest r = UnitSelection.selection.playerUnits[i].makePathRequest(search.movePos[i], 0, 0);
-            req.requests.Add(r);
+            print("Units: " + lst.Count + ", Locs: " + search.movePos.Count);
+            StopCoroutine(buildGroupPathRequest(t, lst));
         }
-        receiveBatchPathRequest(req);
+        else
+        {
+            for (int i = 0; i < lst.Count; i++)
+            {
+                PathRequest r = UnitSelection.selection.playerUnits[i].makePathRequest(search.movePos[i], 0, 0);
+                req.requests.Add(r);
+            }
+            receiveBatchPathRequest(req);
+            print("Finished");
+        }
+    }
+
+    private void OnApplicationQuit()
+    {
+        if (nodes != null)
+        {
+            for (int i = 0; i < nodes.GetLength(0); i++)
+            {
+                for (int j = 0; j < nodes.GetLength(nodes.Rank - 1); j++)
+                {
+                    nodes[i, j] = null;
+                }
+            }
+            nodes = null;
+        }
     }
 }
 

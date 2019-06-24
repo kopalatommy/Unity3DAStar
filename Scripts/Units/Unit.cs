@@ -47,6 +47,8 @@ public class Unit : MonoBehaviour, IComparable<Unit>
     Action testAction = null;
     Action<List<Vector3>> receivePath = null;
 
+    public bool testA2Path = false;
+
     private void Start()
     {
         selectionMarker.SetActive(false);
@@ -85,7 +87,8 @@ public class Unit : MonoBehaviour, IComparable<Unit>
     public void requestPath(Vector3 target, int priority, int sCode)
     {
         moveLoc = target;
-        Map.instance.requestPath(Map.instance.getNodeFromLocation(transform.position), Map.instance.getNodeFromLocation(target), this, priority, sCode);
+        //Map.instance.requestPath(Map.instance.getNodeFromLocation(transform.position), Map.instance.getNodeFromLocation(target), this, priority, sCode);
+        Map.instance.addGroupPathRequest(target, new List<Unit>() { this });
     }
 
     public void requestPath(Vector3 target, int priority, int sCode, Node start)
@@ -175,9 +178,9 @@ public class Unit : MonoBehaviour, IComparable<Unit>
                         }
                         nvPath = null;
                         print("A");*/
+                        requestPath(vPath[vPath.Count - 1], 10, 1);
                         while (nvPath == null) yield return null;
                         print("Got new path");
-                        requestPath(vPath[vPath.Count - 1], 10, 1);
                     }
                     yield return null;
                     continue;
@@ -197,7 +200,6 @@ public class Unit : MonoBehaviour, IComparable<Unit>
             }
             else if ((index + 1) < vPath.Count)
             {
-
                 Node[,] nextNodes = getNodesFromLocationV2(vPath[index + 1]);
                 moving = true;
                 index += 1;//sets it to next index
@@ -221,26 +223,26 @@ public class Unit : MonoBehaviour, IComparable<Unit>
                             }
                             requestPath(vPath[vPath.Count - 1], 10, 1);
                             while (nvPath == null) yield return null;
-                            if (nvPath == null) yield return new WaitForSeconds(500000);
-                            continue;
+                            //if (nvPath == null) yield return new WaitForSeconds(500000);
+                            //continue;
                         }
                         else
                         {
                             //Pause Unit
-                            //print("Hit moving unit");
+                            print("Hit moving unit");
                             moving = false;
                             while (!nodesAreOK(nextNodes) && nvPath == null && !offender.moving)
                             {
                                 yield return null;
                             }
-                            if (!nodesAreOK(nextNodes))
+                            /*if (!nodesAreOK(nextNodes))
                             {
                                 index--;
                                 yield return null;
                                 continue;
                             }
-                            moving = true;
-                            continue;
+                            moving = true;*/
+                            //continue;
                         }
                     }
 

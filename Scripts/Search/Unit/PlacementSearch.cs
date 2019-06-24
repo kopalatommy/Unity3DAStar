@@ -28,6 +28,10 @@ public class PlacementSearch
 
     void Search()
     {
+        long touchedNodes = 0;
+        bool found = false;
+
+        ResetNodes();
         Debug.Log("Units to place: " + unitsToPlace.Count);
         for (int i = 0; i < unitsToPlace.Count; i++)
         {
@@ -37,6 +41,7 @@ public class PlacementSearch
             openSet.Add(start);
             while (openSet.Count > 0)
             {
+                touchedNodes++;
                 Node current = openSet[0];
                 openSet.RemoveAt(0);
                 closedSet.Add(current);
@@ -45,24 +50,14 @@ public class PlacementSearch
 
                 if (NodesAreOK(nodesToTest))
                 {
+                    //Debug.Log("Nodes are ok");
                     placements.Add(nodesToTest);
                     foreach (Node n in nodesToTest)
                     {
                         n.claimed = true;
                     }
                     movePos.Add(GetAvgPosition(nodesToTest));
-
-                    foreach (Node n in Map.getNeighbors(current))
-                    {
-                        if (!closedSet.Contains(n))
-                        {
-                            if (!openSet.Contains(n))
-                            {
-                                openSet.Add(n);
-                            }
-                        }
-                    }
-
+                    found = true;
                     break;
                 }
 
@@ -72,17 +67,21 @@ public class PlacementSearch
                     {
                         if (!openSet.Contains(n))
                         {
+                            //Debug.Log("Added node");
                             openSet.Add(n);
                         }
                     }
                 }
             }
-            if (openSet.Count == 0)
+            if (!found)
             {
+                //Debug.Log("Open set: " + openSet.Count + ", Closed set: " + closedSet.Count);
                 status = 2;
                 return;
             }
+            //Debug.Log("Found: " + i);
         }
+        //Debug.Log("Touched: " + touchedNodes);
         status = 1;
     }
 
@@ -126,9 +125,10 @@ public class PlacementSearch
         {
             if (n == null)
             {
+                Debug.Log("NULL");
                 return false;
             }
-            if (n.claimed && n.walkable)
+            if (n.claimed || !n.walkable)
             {
                 return false;
             }
