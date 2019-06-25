@@ -508,7 +508,7 @@ public class PathFinderA2
             {
                 return false;
             }
-            if ((n.isOccupied && (n.occCode != code && n.occCode != -1)))
+            if ((n.occCode != -1 && (n.occCode != code && n.occCode != -1)))
             {
                 //Debug.Log("Set to false");
                 return false;

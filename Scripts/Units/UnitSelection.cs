@@ -8,9 +8,7 @@ public class UnitSelection : MonoBehaviour
     public static UnitSelection selection;
 
     public List<Unit> playerUnits = new List<Unit>();
-    public List<UnitV2> playerUnitsV2 = new List<UnitV2>();
     public List<Unit> selected = new List<Unit>();
-    public List<UnitV2> selectedV2 = new List<UnitV2>();
     bool isSelecting = false;
 
     Vector3 mousePos;
@@ -169,5 +167,15 @@ public class UnitSelection : MonoBehaviour
             Utils.DrawScreenRect(rect, new Color(0.8f, 0.8f, 0.95f, 0.25f));
             Utils.DrawScreenRectBorder(rect, 2, new Color(0.8f, 0.8f, 0.95f));
         }
+    }
+
+    private void OnApplicationQuit()
+    {
+        selected = null;
+        foreach (Unit u in playerUnits)
+        {
+            Destroy(u);
+        }
+        playerUnits = null;
     }
 }

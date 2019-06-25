@@ -96,7 +96,7 @@ public class Map : MonoBehaviour
             showOccupied = false;
             foreach (Node n in nodes)
             {
-                if (n.isOccupied)
+                if (n.occCode != -1)
                 {
                     GameObject g = Instantiate(nodeMarker);
                     g.transform.position = n.position;
@@ -129,7 +129,7 @@ public class Map : MonoBehaviour
         foreach (Node n in Map.nodes)
         {
             n.revert();
-            if (n.isOccupied)
+            if (n.occCode != -1)
             {
                 alteredNodes.Add(n);
                 n.walkable = false;
@@ -190,8 +190,8 @@ public class Map : MonoBehaviour
             //print("Length: " + length + ", x size: " + xSize + ", Z size: " + zSize);
             if (xSize == 0 || zSize == 0)
             {
-                xSize = 500;
-                zSize = 500;
+                xSize = 2000;
+                zSize = 2000;
             }
             CreateMap m = new CreateMap(makeNewMap, length, xSize, zSize, mapName);
             while (m.totalNodes == 0)
@@ -353,33 +353,6 @@ public class Map : MonoBehaviour
         r.start = start;
         r.end = goal;
         r.requestee = u;
-        r.size = u.size;
-        r.priority = p;
-        r.specialCode = sc;
-        if (pathRequestQueue.Count > 0)
-        {
-            for (int i = pathRequestQueue.Count - 1; i >= 0; i--)
-            {
-                if (pathRequestQueue[i].priority < p)
-                {
-                    pathRequestQueue.Insert(i, r);
-                    return;
-                }
-            }
-            pathRequestQueue.Add(r);
-        }
-        else
-        {
-            pathRequestQueue.Add(r);
-        }
-    }
-
-    public void requestPath(Node start, Node goal, UnitV2 u, int p, int sc)
-    {
-        PathRequest r = new PathRequest();
-        r.start = start;
-        r.end = goal;
-        r.requesteeV2 = u;
         r.size = u.size;
         r.priority = p;
         r.specialCode = sc;
@@ -707,7 +680,7 @@ public class Map : MonoBehaviour
         foreach (Node n in Map.nodes)
         {
             n.revert();
-            if (n.isOccupied && n.occCode != code)
+            if (n.occCode != -1 && n.occCode != code)
             {
                 alteredNodes.Add(n);
                 n.walkable = false;
@@ -1012,7 +985,6 @@ public struct PathRequest
     public Node start;
     public Node end;
     public Unit requestee;
-    public UnitV2 requesteeV2;
     public bool occupied;
     public int size;
     //Defualt to 0

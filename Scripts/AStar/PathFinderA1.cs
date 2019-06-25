@@ -60,7 +60,7 @@ public class PathFinderA1
         foreach (Node n in Map.nodes)
         {
             n.revert();
-            if (n.isOccupied && n.occCode != code)
+            if (n.occCode != -1 && n.occCode != code)
             {
                 alteredNodes.Add(n);
                 n.walkable = false;

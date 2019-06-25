@@ -49,7 +49,7 @@ public class PathFinderA1Test : MonoBehaviour
         foreach (Node n in Map.nodes)
         {
             n.revert();
-            if (n.isOccupied && n.occCode != code)
+            if (n.occCode != -1 && n.occCode != code)
             {
                 /*GameObject g = Instantiate(Map.instance.nodeMarker);
                 g.transform.position = n.position;

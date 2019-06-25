@@ -21,7 +21,7 @@ public class Node : IComparable<Node>
 
     //Unit avoidence
     public int occCode = -1;
-    public bool isOccupied = false;
+    //public bool isOccupied = false;
 
     //PathFinding
     public bool critical = false;
@@ -56,7 +56,7 @@ public class Node : IComparable<Node>
 
     public void revert()
     {
-
+        parent = null;
     }
 
     // AStar methods

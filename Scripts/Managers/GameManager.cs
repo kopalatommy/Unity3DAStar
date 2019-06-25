@@ -34,7 +34,7 @@ public class GameManager : MonoBehaviour
         teamColors.Add(Color.green);
         teamColors.Add(Color.red);
         manager = this;
-        StartCoroutine(testWaves());
+        //StartCoroutine(testWaves());
         StartCoroutine(waitForMap());
     }
 

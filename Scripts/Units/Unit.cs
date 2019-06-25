@@ -327,7 +327,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
             {
                 return false;
             }
-            if (n.isOccupied && (n.occCode != occCode && n.occCode != -1))
+            if (n.occCode != -1 && n.occCode != occCode)
             {
                 return false;
             }
@@ -344,7 +344,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
         }
         foreach (Node n in nodes)
         {
-            if (n == null || (n.isOccupied && n.occCode != occCode && n.occCode != -1)) // potential issue with check; if bad get from nodesareok
+            if (n == null || (n.occCode != occCode && n.occCode != -1)) // potential issue with check; if bad get from nodesareok
             {
                 return false;
             }
@@ -353,7 +353,6 @@ public class Unit : MonoBehaviour, IComparable<Unit>
         {
             if (n != null)
             {
-                n.isOccupied = true;
                 n.occCode = occCode;
             }
         }
@@ -366,7 +365,6 @@ public class Unit : MonoBehaviour, IComparable<Unit>
         {
             if (n != null && n.occCode == occCode)
             {
-                n.isOccupied = false;
                 n.occCode = -1;
             }
         }
@@ -484,8 +482,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
     public void OnDestroy()
     {
         resetCurrentNodes(currentNodes);
-        UnitManager.manager.allUnits.Remove(this);
-        UnitSelection.selection.playerUnits.Remove(this);
-        
+        //UnitManager.manager.allUnits.Remove(this);
+        //UnitSelection.selection.playerUnits.Remove(this);
     }
 }

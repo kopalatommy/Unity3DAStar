@@ -11,7 +11,6 @@ public class UnitManager : MonoBehaviour
     public List<Unit> allUnits = new List<Unit>();
 
     Dictionary<int, Unit> unitCodes = new Dictionary<int, Unit>();
-    Dictionary<int, UnitV2> unitV2Codes = new Dictionary<int, UnitV2>();
 
     int occCode = 0;
     int playerCode = 0;
@@ -32,14 +31,6 @@ public class UnitManager : MonoBehaviour
     {
         int a = occCode;
         unitCodes[a] = u;
-        occCode++;
-        return a;
-    }
-
-    public int getOccCode(UnitV2 u)
-    {
-        int a = occCode;
-        unitV2Codes[a] = u;
         occCode++;
         return a;
     }
@@ -71,5 +62,12 @@ public class UnitManager : MonoBehaviour
     public void removeUnit(int key, GameObject g)
     {
         playerUnits[key].Remove(g);
+    }
+
+    private void OnApplicationQuit()
+    {
+        allUnits = null;
+        unitCodes = null;
+        playerUnits = null;
     }
 }
