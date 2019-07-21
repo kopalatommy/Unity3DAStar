@@ -12,13 +12,13 @@ public class PathFinderA2
     private Thread thread;
     private Node start;
     private Node goal;
-    private float width;
+    //private float width;
     private bool pathSuccess = false;
     public List<Node> path = null;
     public List<Node> simplified = null;
     public List<Vector3> vPath = null;
     public int size = 0;
-    int code = 0;
+    readonly int code = 0;
     public List<Node> critical = new List<Node>();
 
     public PathFinderA2(PathRequest r)
@@ -27,22 +27,22 @@ public class PathFinderA2
         start = r.start;
         goal = r.end;
         size = r.requestee.size;
-        code = r.requestee.occCode;
-        startThread();
+        //code = r.requestee.occCode;
+        StartThread();
     }
 
-    public void startThread()
+    public void StartThread()
     {
         ThreadStart startT = new ThreadStart(AStar);
         thread = new Thread(startT);
         thread.Start();
     }
 
-    private void resetNodes()
+    private void ResetNodes()
     {
         foreach (Node n in Map.nodes)
         {
-            n.revert();
+            n.Revert();
         }
         //Debug.Log("Finished resetting nodes");
     }
@@ -64,7 +64,7 @@ public class PathFinderA2
             return;
         }
 
-        if (!nodesAreOK(getNodesFromLocation(start.position)) || !nodesAreOK(getNodesFromLocation(goal.position)))
+        if (!NodesAreOK(GetNodesFromLocation(start.Position)) || !NodesAreOK(GetNodesFromLocation(goal.Position)))
         {
             Debug.Log("Start or goal is not fully walkable, pathfinding cannot be completed");
             failed = true;
@@ -92,19 +92,19 @@ public class PathFinderA2
                 Debug.Log("Ignoring start node");
                 continue;
             }*/
-            if (!nodesAreOK(getNodesFromLocation(currentNode.position)))
+            if (!NodesAreOK(GetNodesFromLocation(currentNode.Position)))
             {
                 continue;
             }
 
-            foreach (Node n in Map.getNeighbors(currentNode))
+            foreach (Node n in Map.GetNeighbors(currentNode))
             {
                 if (!n.walkable || closedSet.Contains(n))
                 {
                     continue;
                 }
 
-                if (!nodesAreOK(getNodesFromLocation(n.position)))
+                if (!NodesAreOK(GetNodesFromLocation(n.Position)))
                 {
                     //Debug.Log("Ignoring node");
                     continue;
@@ -126,7 +126,7 @@ public class PathFinderA2
         }
         if (pathSuccess)
         {
-            retracePath();
+            RetracePath();
         }
     }
 
@@ -140,7 +140,7 @@ public class PathFinderA2
         return (14 * dstX) + (10 * (dstZ - dstX));
     }
 
-    private void retracePath()
+    private void RetracePath()
     {
         path = new List<Node>();
         Node currentNode = goal;
@@ -159,14 +159,14 @@ public class PathFinderA2
         vPath = new List<Vector3>();
         foreach (Node n in path)
         {
-            vPath.Add(n.position);
+            vPath.Add(n.Position);
             //vPath.Add(getAvgNodePosition(getNodesFromLocation(n.position)[0, 0]));
         }
-        resetNodes();
+        ResetNodes();
         done = true;
     }
 
-    private void simplifyPath()
+    private void SimplifyPath()
     {
         simplified = new List<Node>();
         Vector2 directionOld = Vector2.zero;
@@ -228,7 +228,7 @@ public class PathFinderA2
                 }
                 for (int j = simplified.Count - 1; j > i; j--)
                 {
-                    if (viableChange(simplified[i], simplified[j]) && Math.Abs(j - i) != 1 && moveCost(simplified[i].position, simplified[j].position) <= moveCost(simplified.GetRange(i, j - i)))
+                    if (ViableChange(simplified[i], simplified[j]) && Math.Abs(j - i) != 1 && MoveCost(simplified[i].Position, simplified[j].Position) <= MoveCost(simplified.GetRange(i, j - i)))
                     {
                         simplified.RemoveRange(i + 1, j - i - 1);
                         changed = true;
@@ -244,7 +244,7 @@ public class PathFinderA2
         critical = simplified;
     }
 
-    void buildVPath()
+    void BuildVPath()
     {
         List<Vector3> newNodes = new List<Vector3>();
         vPath = new List<Vector3>();
@@ -253,31 +253,31 @@ public class PathFinderA2
             Node s = simplified[i];
             Node e = simplified[i + 1];
             Node last = s;
-            Vector3 current = s.position;
-            Vector3 change = (e.position - s.position) * .01f;
+            Vector3 current = s.Position;
+            Vector3 change = (e.Position - s.Position) * .01f;
 
-            float distance = Vector3.Distance(e.position, current);
-            while (distance >= Vector3.Distance(e.position, current))
+            float distance = Vector3.Distance(e.Position, current);
+            while (distance >= Vector3.Distance(e.Position, current))
             {
-                distance = Vector3.Distance(e.position, current);
+                distance = Vector3.Distance(e.Position, current);
                 current += change;
-                if (last != Map.instance.getNodeFromLocation(current))
+                if (last != Map.instance.GetNodeFromLocation(current))
                 {
-                    last = Map.instance.getNodeFromLocation(current);
+                    last = Map.instance.GetNodeFromLocation(current);
                     vPath.Add(current);
                 }
             }
             vPath.RemoveAt(vPath.Count - 1);
         }
-        Vector3 temp = GetAvgPosition(getNodesFromLocation(vPath[vPath.Count - 1]));
+        Vector3 temp = GetAvgPosition(GetNodesFromLocation(vPath[vPath.Count - 1]));
         vPath.RemoveAt(vPath.Count - 1);
         vPath.Add(temp);
     }
 
-    bool viableChange(Node s, Node g)
+    bool ViableChange(Node s, Node g)
     {
-        Vector3 start = s.position;
-        Vector3 end = g.position;
+        Vector3 start = s.Position;
+        Vector3 end = g.Position;
         Vector3 current = start;
         float distance = Vector3.Distance(end, current);
         Vector3 change = (end - start) * (1 / (distance / .5f));
@@ -289,7 +289,7 @@ public class PathFinderA2
         {
             distance = Vector3.Distance(end, current);
             current += change;
-            if (!Map.instance.getNodeFromLocation(current).walkable)
+            if (!Map.instance.GetNodeFromLocation(current).walkable)
             {
                 return false;
             }
@@ -298,17 +298,17 @@ public class PathFinderA2
         return true;
     }
 
-    int moveCost(List<Node> n)
+    int MoveCost(List<Node> n)
     {
         int t = 0;
         for (int i = 0; i < n.Count - 1; i++)
         {
-            t += moveCost(n[i].position, n[i + 1].position);
+            t += MoveCost(n[i].Position, n[i + 1].Position);
         }
         return t;
     }
 
-    int moveCost(Vector3 a, Vector3 b)
+    int MoveCost(Vector3 a, Vector3 b)
     {
         int currentCost = 0;
 
@@ -318,7 +318,7 @@ public class PathFinderA2
 
         while (dist >= Vector3.Distance(current, b))
         {
-            currentCost += Map.instance.getNodeFromLocation(current).moveCost;
+            currentCost += Map.instance.GetNodeFromLocation(current).moveCost;
             dist = Vector3.Distance(b, current);
             current += change;
         }
@@ -326,7 +326,7 @@ public class PathFinderA2
         return currentCost;
     }
 
-    float getDist(Node n)
+    float GetDist(Node n)
     {
         int num = 1;
         int x = n.xIndex;
@@ -345,7 +345,7 @@ public class PathFinderA2
                 {
                     if (!Map.nodes[x2, z2].walkable)
                     {
-                        return Vector3.Distance(n.position, Map.nodes[x2, z2].position);
+                        return Vector3.Distance(n.Position, Map.nodes[x2, z2].Position);
                     }
                 }
                 else
@@ -366,7 +366,7 @@ public class PathFinderA2
                     {
                         z2 = Mathf.FloorToInt(zSize * (1 / length)) - 1;
                     }
-                    return Vector3.Distance(n.position, Map.nodes[x2, z2].position);
+                    return Vector3.Distance(n.Position, Map.nodes[x2, z2].Position);
                 }
             }
 
@@ -378,7 +378,7 @@ public class PathFinderA2
                 {
                     if (!Map.nodes[x2, z2].walkable)
                     {
-                        return Vector3.Distance(n.position, Map.nodes[x2, z2].position);
+                        return Vector3.Distance(n.Position, Map.nodes[x2, z2].Position);
                     }
                 }
                 else
@@ -399,7 +399,7 @@ public class PathFinderA2
                     {
                         z2 = Mathf.FloorToInt(zSize * (1 / length)) - 1;
                     }
-                    return Vector3.Distance(n.position, Map.nodes[x2, z2].position);
+                    return Vector3.Distance(n.Position, Map.nodes[x2, z2].Position);
                 }
             }
 
@@ -411,7 +411,7 @@ public class PathFinderA2
                 {
                     if (!Map.nodes[x2, z2].walkable)
                     {
-                        return Vector3.Distance(n.position, Map.nodes[x2, z2].position);
+                        return Vector3.Distance(n.Position, Map.nodes[x2, z2].Position);
                     }
                 }
                 else
@@ -432,7 +432,7 @@ public class PathFinderA2
                     {
                         z2 = Mathf.FloorToInt(zSize * (1 / length)) - 1;
                     }
-                    return Vector3.Distance(n.position, Map.nodes[x2, z2].position);
+                    return Vector3.Distance(n.Position, Map.nodes[x2, z2].Position);
                 }
             }
 
@@ -444,7 +444,7 @@ public class PathFinderA2
                 {
                     if (!Map.nodes[x2, z2].walkable)
                     {
-                        return Vector3.Distance(n.position, Map.nodes[x2, z2].position);
+                        return Vector3.Distance(n.Position, Map.nodes[x2, z2].Position);
                     }
                 }
                 else
@@ -465,14 +465,14 @@ public class PathFinderA2
                     {
                         z2 = Mathf.FloorToInt(zSize * (1 / length)) - 1;
                     }
-                    return Vector3.Distance(n.position, Map.nodes[x2, z2].position);
+                    return Vector3.Distance(n.Position, Map.nodes[x2, z2].Position);
                 }
             }
             num++;
         }
     }
 
-    Node[,] getNodesFromLocation(Vector3 pos)
+    Node[,] GetNodesFromLocation(Vector3 pos)
     {
         float l = Map.length;
 
@@ -492,14 +492,14 @@ public class PathFinderA2
                     nPos.x = x + (l * q);
                     nPos.z = z + (w * l);
                     if (nPos.x >= 100 || nPos.z >= 100) return null;
-                    nodes[q, w] = Map.instance.getNodeFromLocation(nPos);
+                    nodes[q, w] = Map.instance.GetNodeFromLocation(nPos);
                 }
             }
         }
         return nodes;
     }
 
-    bool nodesAreOK(Node[,] nodes)
+    bool NodesAreOK(Node[,] nodes)
     {
         if (nodes == null) return false;
         foreach (Node n in nodes)
@@ -527,8 +527,8 @@ public class PathFinderA2
 
     Vector3 GetAvgPosition(Node[,] n)
     {
-        float x = ((n[0, 0].position.x + n[0, n.GetLength(n.Rank - 1) - 1].position.x) / 2) + Map.length / 2;
-        float z = ((n[0, 0].position.z + n[n.GetLength(n.Rank - 1) - 1, 0].position.z) / 2) + Map.length / 2;
-        return new Vector3(x - 0.01f, n[0, 0].position.y, z - 0.01f);
+        float x = ((n[0, 0].Position.x + n[0, n.GetLength(n.Rank - 1) - 1].Position.x) / 2) + Map.length / 2;
+        float z = ((n[0, 0].Position.z + n[n.GetLength(n.Rank - 1) - 1, 0].Position.z) / 2) + Map.length / 2;
+        return new Vector3(x - 0.01f, n[0, 0].Position.y, z - 0.01f);
     }
 }

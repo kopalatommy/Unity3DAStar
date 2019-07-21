@@ -14,7 +14,7 @@ public class PlacementSearch
     public int status = 0;
 
     Thread thread = null;
-    Node start = null;
+    readonly Node start = null;
 
     public PlacementSearch(List<Unit> _unitsToPlace, Node _start)
     {
@@ -46,7 +46,7 @@ public class PlacementSearch
                 openSet.RemoveAt(0);
                 closedSet.Add(current);
 
-                Node[,] nodesToTest = GetNodesFromLocationV2(current.position, (int)( 1.5 *(unitsToPlace[i].size * (1 / Map.length))));
+                Node[,] nodesToTest = GetNodesFromLocationV2(current.Position, (int)( 1.5 *(unitsToPlace[i].size * (1 / Map.length))));
 
                 if (NodesAreOK(nodesToTest))
                 {
@@ -61,7 +61,7 @@ public class PlacementSearch
                     break;
                 }
 
-                foreach (Node n in Map.getNeighbors(current))
+                foreach (Node n in Map.GetNeighbors(current))
                 {
                     if (!closedSet.Contains(n))
                     {
@@ -112,7 +112,7 @@ public class PlacementSearch
                     nPos.y = pos.y;
                     nPos.x = x + (l * q);
                     nPos.z = z + (w * l);
-                    nodes[q, w] = Map.instance.getNodeFromLocation(nPos);
+                    nodes[q, w] = Map.instance.GetNodeFromLocation(nPos);
                 }
             }
         }
@@ -138,8 +138,8 @@ public class PlacementSearch
 
     Vector3 GetAvgPosition(Node[,] n)
     {
-        float x = ((n[0, 0].position.x + n[0, n.GetLength(n.Rank - 1) - 1].position.x) / 2) + Map.length / 2;
-        float z = ((n[0, 0].position.z + n[n.GetLength(n.Rank - 1) - 1, 0].position.z) / 2) + Map.length / 2;
-        return new Vector3(x - 0.01f, n[0, 0].position.y, z - 0.01f);
+        float x = ((n[0, 0].Position.x + n[0, n.GetLength(n.Rank - 1) - 1].Position.x) / 2) + Map.length / 2;
+        float z = ((n[0, 0].Position.z + n[n.GetLength(n.Rank - 1) - 1, 0].Position.z) / 2) + Map.length / 2;
+        return new Vector3(x - 0.01f, n[0, 0].Position.y, z - 0.01f);
     }
 }

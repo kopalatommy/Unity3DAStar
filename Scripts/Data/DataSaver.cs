@@ -11,15 +11,15 @@ public class DataSaver
         instance = this;
     }*/
 
-    public void saveMap(mapData mData)
+    public void SaveMap(MapData mData)
     {
         BinaryFormatter bf = new BinaryFormatter();
         FileStream file = File.Create(Application.dataPath + "/mapData/" + mData.mName + ".dat");
         bf.Serialize(file, mData);
     }
-    public void saveMap(Node[,] nodes, string mapName, int length, int xSize, int zSize)
+    public void SaveMap(Node[,] nodes, string mapName, int length, int xSize, int zSize)
     {
-        mapData mData = new mapData();
+        /*mapData mData = new mapData();
         nodeData[,] nData = new nodeData[nodes.GetLength(0), nodes.GetLength(nodes.Rank - 1)];
         Debug.Log("Rank: " + (nodes.Rank - 1));
 
@@ -37,21 +37,34 @@ public class DataSaver
         mData.xSize = xSize;
         mData.zSize = zSize;
         mData.nodeLength = length;
-        saveMap(mData);
+        saveMap(mData);*/
     }
 
-    public mapData getMap(string mapName, string dataPath)
+    public MapData GetMap(string mapName, string dataPath)
     {
         BinaryFormatter bf = new BinaryFormatter();
-        //FileStream file = File.Open(Application.dataPath + "/mapData/" + mapName + ".dat", FileMode.Open);
-        //Debug.Log("Data path: " + dataPath);
         FileStream file = File.Open(dataPath + "/mapData/" + mapName + ".dat", FileMode.Open);
-        mapData temp = (mapData)bf.Deserialize(file);
-        file.Close();
-        return temp;
+        Debug.Log("Opened file");
+        //object a = bf.Deserialize(file);
+        //Debug.Log("Get object");
+        try
+        {
+            MapData temp = (MapData)bf.Deserialize(file);
+            Debug.Log("Rebuilt map data");
+            file.Dispose();
+            file.Close();
+            file = null;
+            bf = null;
+            return temp;
+        }
+        catch
+        {
+            Debug.Log("Failed to deserialize file");
+            return new MapData();
+        }
     }
 
-    public bool mapExists(string mapName)
+    public bool MapExists(string mapName)
     {
         return File.Exists(Application.dataPath + "/mapData/" + mapName + ".dat");
     }

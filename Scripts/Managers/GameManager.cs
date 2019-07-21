@@ -35,22 +35,22 @@ public class GameManager : MonoBehaviour
         teamColors.Add(Color.red);
         manager = this;
         //StartCoroutine(testWaves());
-        StartCoroutine(waitForMap());
+        StartCoroutine(WaitForMap());
     }
 
     //This function waits for the map to be created and ready
     //and then perfroms actions dependent on the map being created
-    IEnumerator waitForMap()
+    IEnumerator WaitForMap()
     {
         while (Map.instance == null || Map.instance.mapIsReady == false)
         {
             yield return null;
         }
 
-        spawnUnits();
+        SpawnUnits();
     }
 
-    void spawnUnits()
+    void SpawnUnits()
     {
         /*for (int i = 0; i < spawnLocs.Count; i++)
         for (int i = 0; i < 1; i++)
@@ -94,14 +94,14 @@ public class GameManager : MonoBehaviour
         
     }
 
-    IEnumerator testSearch()
+    IEnumerator TestSearch()
     {
         yield return new WaitForSeconds(10);
         print("Finished wait");
-        Map.instance.addGroupPathRequest(new Vector3(50, 0, 50), UnitSelection.selection.playerUnits);
+        Map.instance.AddGroupPathRequest(new Vector3(50, 0, 50), UnitSelection.selection.playerUnits);
     }
 
-    IEnumerable handleWaves()
+    IEnumerable HandleWaves()
     {
         List<GameObject> printedNodes = new List<GameObject>();
         while (!Map.instance.mapIsReady)
@@ -109,11 +109,11 @@ public class GameManager : MonoBehaviour
             yield return null;
         }
 
-        List<Node> temp = getWaveBorder(50);
+        List<Node> temp = GetWaveBorder(50);
         foreach (Node n in temp)
         {
             GameObject g = Instantiate(Map.instance.nodeMarker);
-            g.transform.position = n.position;
+            g.transform.position = n.Position;
             g.transform.localScale = Map.vLength;
         }
         /*while (gameInProgress)
@@ -126,7 +126,7 @@ public class GameManager : MonoBehaviour
 
     public int waveNum = 0;
     public List<GameObject> printedNodes = new List<GameObject>();
-    IEnumerator testWaves()
+    IEnumerator TestWaves()
     {
         while (Map.instance == null || !Map.instance.mapIsReady)
         {
@@ -143,12 +143,12 @@ public class GameManager : MonoBehaviour
                 }
             }
             printedNodes = new List<GameObject>();
-            List<Node> temp = getWaveBorder(200 + (waveNum * 10));
+            List<Node> temp = GetWaveBorder(200 + (waveNum * 10));
 //            print("Wave: " + waveNum);
             foreach (Node n in temp)
             {
                 GameObject g = Instantiate(Map.instance.nodeMarker);
-                g.transform.position = n.position;
+                g.transform.position = n.Position;
                 g.transform.localScale = Map.vLength;
                 printedNodes.Add(g);
             }
@@ -162,7 +162,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    List<Node> getWaveBorder(int range)
+    List<Node> GetWaveBorder(int range)
     {
         List<Node> toReturn = new List<Node>();
 

@@ -67,7 +67,7 @@ public class Test : MonoBehaviour
                 print(i + ", " + j);
                 if (placed[i,j] != null)
                 {
-                    placed[i, j].requestPath(position, 0, 0);
+                    placed[i, j].RequestPath(position, 0, 0);
                     position.x += placed[i, j].size * 2;
                 }
             }

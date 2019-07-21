@@ -8,7 +8,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
     public Transform target;
     public int size;
 
-    private List<GameObject> testing = new List<GameObject>();
+    private readonly List<GameObject> testing = new List<GameObject>();
 
     //ForMovement
     public int moveSpeed = 10;
@@ -45,19 +45,19 @@ public class Unit : MonoBehaviour, IComparable<Unit>
 
     //Action
     Action testAction = null;
-    Action<List<Vector3>> receivePath = null;
+    //Action<List<Vector3>> receivePath = null;
 
     public bool testA2Path = false;
 
     private void Start()
     {
         selectionMarker.SetActive(false);
-        StartCoroutine(followPath7());
-        StartCoroutine(combatHanlder());
+        StartCoroutine(FollowPath7());
+        StartCoroutine(CombatHanlder());
         //UnitSelection.selection.playerUnits.Add(this);
         occCode = UnitManager.manager.getOccCode(this);
 
-        testAction = actionTest;
+        testAction = ActionTest;
         //requestPath(target.position);
     }
 
@@ -68,52 +68,60 @@ public class Unit : MonoBehaviour, IComparable<Unit>
         {
             test = false;
             //print("Nodes == null: " + currentNodes == null);
-            Node[,] nodes = getNodesFromLocationV2(transform.position);
+            Node[,] nodes = GetNodesFromLocationV2(transform.position);
             foreach (Node n in nodes)
             {
                 GameObject g = Instantiate(Map.instance.nodeMarker);
-                g.transform.position = n.position;
+                g.transform.position = n.Position;
                 g.transform.localScale = Vector3.one * Map.length;
             }
-            print(transform.position + ", " + GetAvgPosition(getNodesFromLocationV2(transform.position)));
+            print(transform.position + ", " + GetAvgPosition(GetNodesFromLocationV2(transform.position)));
         }
     }
 
-    public void actionTest()
+    public void ActionTest()
     {
         print("Action worked");
     }
 
-    public void requestPath(Vector3 target, int priority, int sCode)
+    public void RequestPath(Vector3 target, int priority, int sCode)
     {
         moveLoc = target;
         //Map.instance.requestPath(Map.instance.getNodeFromLocation(transform.position), Map.instance.getNodeFromLocation(target), this, priority, sCode);
-        Map.instance.addGroupPathRequest(target, new List<Unit>() { this });
+        Map.instance.AddGroupPathRequest(target, new List<Unit>() { this });
     }
 
-    public void requestPath(Vector3 target, int priority, int sCode, Node start)
+    public void RequestPath(Vector3 target, int priority, int sCode, Node start)
     {
         moveLoc = target;
-        if (!nodesAreOK(getNodesFromLocationV2(start.position)))
+        if (!NodesAreOK(GetNodesFromLocationV2(start.Position)))
         {
             print("Pathfinding will fail");
         }
-        Map.instance.requestPath(start, Map.instance.getNodeFromLocation(target), this, priority, sCode);
+        Map.instance.RequestPath(start, Map.instance.GetNodeFromLocation(target), this, priority, sCode);
     }
 
-    public PathRequest makePathRequest(Vector3 target, int priority, int sCode)
+    public PathRequest MakePathRequest(Vector3 target, int priority, int sCode)
     {
-        PathRequest r = new PathRequest();
-        r.start = Map.instance.getNodeFromLocation(transform.position);
+        PathRequest r = new PathRequest()
+        {
+            start = Map.instance.GetNodeFromLocation(transform.position),
+            end = Map.instance.GetNodeFromLocation(target),
+            requestee = this,
+            size = size,
+            priority = priority,
+            specialCode = sCode
+        };
+        /*r.start = Map.instance.getNodeFromLocation(transform.position);
         r.end = Map.instance.getNodeFromLocation(target);
         r.requestee = this;
         r.size = size;
         r.priority = priority;
-        r.specialCode = sCode;
+        r.specialCode = sCode;*/
         return r;
     }
 
-    public void getPath(List<Vector3> p)
+    public void GetPath(List<Vector3> p)
     {
         foreach (GameObject g in testing)
         {
@@ -134,19 +142,19 @@ public class Unit : MonoBehaviour, IComparable<Unit>
     public Node[,] currentNodes = null;
     public int moveCode = -1;
     //Requests a new path where occupied nodes are unwalkable
-    IEnumerator followPath7()
+    IEnumerator FollowPath7()
     {
         List<Vector3> vPath = new List<Vector3>();
         int index = 0;
-        currentNodes = getNodesFromLocationV2(transform.position);
+        currentNodes = GetNodesFromLocationV2(transform.position);
         while (Map.instance == null || !Map.instance.mapIsReady)
         {
             yield return null;
         }
 
-        Node next = Map.instance.getNodeFromLocation(transform.position);
+        Node next = Map.instance.GetNodeFromLocation(transform.position);
         //vPath.Add(transform.position);
-        vPath.Add(GetAvgPosition(getNodesFromLocationV2(transform.position)));
+        vPath.Add(GetAvgPosition(GetNodesFromLocationV2(transform.position)));
 
         while (true)
         {
@@ -155,14 +163,14 @@ public class Unit : MonoBehaviour, IComparable<Unit>
                 if (nvPath.Count > 0 && nvPath[0] != null)
                 {
                     gameObject.GetComponent<Renderer>().material.color = Color.yellow;
-                    if (nodesAreOK(getNodesFromLocationV2(nvPath[0])))
+                    if (NodesAreOK(GetNodesFromLocationV2(nvPath[0])))
                     {
                         gameObject.GetComponent<Renderer>().material.color = Color.white;
                         vPath = nvPath;
                         index = 0;
-                        resetCurrentNodes(currentNodes);
-                        currentNodes = getNodesFromLocationV2(vPath[index]);
-                        fillCurrentNodes(currentNodes);
+                        ResetCurrentNodes(currentNodes);
+                        currentNodes = GetNodesFromLocationV2(vPath[index]);
+                        FillCurrentNodes(currentNodes);
                         moving = true;
                         nvPath = null;
                     }
@@ -178,7 +186,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
                         }
                         nvPath = null;
                         print("A");*/
-                        requestPath(vPath[vPath.Count - 1], 10, 1);
+                        RequestPath(vPath[vPath.Count - 1], 10, 1);
                         while (nvPath == null) yield return null;
                         print("Got new path");
                     }
@@ -200,12 +208,12 @@ public class Unit : MonoBehaviour, IComparable<Unit>
             }
             else if ((index + 1) < vPath.Count)
             {
-                Node[,] nextNodes = getNodesFromLocationV2(vPath[index + 1]);
+                Node[,] nextNodes = GetNodesFromLocationV2(vPath[index + 1]);
                 moving = true;
                 index += 1;//sets it to next index
-                if (!nodesAreOK(nextNodes) && nvPath == null)
+                if (!NodesAreOK(nextNodes) && nvPath == null)
                 {
-                    int offending = getUnitInWay(nextNodes);
+                    int offending = GetUnitInWay(nextNodes);
                     //print(offending);
                     if (offending != -1)
                     {
@@ -217,11 +225,11 @@ public class Unit : MonoBehaviour, IComparable<Unit>
                         {
                             /*print("Next nodes are occupied");
                             print("Position = walkable: " + nodesAreOK(getNodesFromLocation(transform.position)));*/
-                            if (!nodesAreOK(getNodesFromLocationV2(Map.instance.getNodeFromLocation(transform.position).position)))
+                            if (!NodesAreOK(GetNodesFromLocationV2(Map.instance.GetNodeFromLocation(transform.position).Position)))
                             {
                                 print("Pathfinding is not destined to succeed");
                             }
-                            requestPath(vPath[vPath.Count - 1], 10, 1);
+                            RequestPath(vPath[vPath.Count - 1], 10, 1);
                             while (nvPath == null) yield return null;
                             //if (nvPath == null) yield return new WaitForSeconds(500000);
                             //continue;
@@ -231,7 +239,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
                             //Pause Unit
                             print("Hit moving unit");
                             moving = false;
-                            while (!nodesAreOK(nextNodes) && nvPath == null && !offender.moving)
+                            while (!NodesAreOK(nextNodes) && nvPath == null && !offender.moving)
                             {
                                 yield return null;
                             }
@@ -247,7 +255,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
                     }
 
                     index -= 1;//reverts it back to current index
-                    if (index - 1 > 0 && nodesAreOK(getNodesFromLocationV2(vPath[index - 1])) && nvPath == null)
+                    if (index - 1 > 0 && NodesAreOK(GetNodesFromLocationV2(vPath[index - 1])) && nvPath == null)
                     {
                         //index -= 1;//sets it to previous index
                         gameObject.GetComponent<Renderer>().material.color = Color.magenta;
@@ -267,7 +275,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
                         continue;
                     }
                     //if (!nodesAreOK(getNodesFromLocationV2(vPath[index])))
-                    if(!nodesAreOK(nextNodes))
+                    if(!NodesAreOK(nextNodes))
                     {
                         print("Failed to wait");
                         index--;
@@ -275,9 +283,9 @@ public class Unit : MonoBehaviour, IComparable<Unit>
                     }
                     else
                     {
-                        resetCurrentNodes(currentNodes);
+                        ResetCurrentNodes(currentNodes);
                         //if (fillCurrentNodes(getNodesFromLocationV2(vPath[index])))
-                        if(fillCurrentNodes(nextNodes))
+                        if(FillCurrentNodes(nextNodes))
                         {
                             gameObject.GetComponent<Renderer>().material.color = Color.black;
                             //currentNodes = getNodesFromLocationV2(vPath[index]);
@@ -286,7 +294,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
                         else
                         {
                             gameObject.GetComponent<Renderer>().material.color = Color.red;
-                            fillCurrentNodes(currentNodes);
+                            FillCurrentNodes(currentNodes);
                             index -= 1;
                         }
                     }
@@ -302,7 +310,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
         }
     }
 
-    int getUnitInWay(Node[,] nodes)
+    int GetUnitInWay(Node[,] nodes)
     {
         foreach (Node n in nodes)
         {
@@ -314,7 +322,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
         return -1;
     }
 
-    bool nodesAreOK(Node[,] nodes)
+    bool NodesAreOK(Node[,] nodes)
     {
         foreach (Node n in nodes)
         {
@@ -335,9 +343,9 @@ public class Unit : MonoBehaviour, IComparable<Unit>
         return true;
     }
 
-    bool fillCurrentNodes(Node[,] nodes)
+    bool FillCurrentNodes(Node[,] nodes)
     {
-        if (!nodesAreOK(nodes))
+        if (!NodesAreOK(nodes))
         {
             print("Fill current failed");
             return false;
@@ -359,7 +367,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
         return true;
     }
 
-    void resetCurrentNodes(Node[,] nodes)
+    void ResetCurrentNodes(Node[,] nodes)
     {
         foreach (Node n in nodes)
         {
@@ -370,7 +378,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
         }
     }
 
-    Node[,] getNodesFromLocation(Vector3 pos , int i)
+    Node[,] GetNodesFromLocation(Vector3 pos , int i)
     {
         float l = Map.length;
 
@@ -389,14 +397,14 @@ public class Unit : MonoBehaviour, IComparable<Unit>
                     nPos.y = pos.y;
                     nPos.x = x + (l * q);
                     nPos.z = z + (w * l);
-                    nodes[q, w] = Map.instance.getNodeFromLocation(nPos);
+                    nodes[q, w] = Map.instance.GetNodeFromLocation(nPos);
                 }
             }
         }
         return nodes;
     }
 
-    Node[,] getNodesFromLocationV2(Vector3 pos)
+    Node[,] GetNodesFromLocationV2(Vector3 pos)
     {
         float l = Map.length;
 
@@ -415,7 +423,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
                     nPos.y = pos.y;
                     nPos.x = x + (l * q);
                     nPos.z = z + (w * l);
-                    nodes[q, w] = Map.instance.getNodeFromLocation(nPos);
+                    nodes[q, w] = Map.instance.GetNodeFromLocation(nPos);
                 }
             }
         }
@@ -427,7 +435,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
         return (size == u.size) ? 1 : (size > u.size) ? 1 : -1;
     }
 
-    public void setMarker(bool b)
+    public void SetMarker(bool b)
     {
         if (selectionMarker.activeSelf != b)
         {
@@ -439,19 +447,19 @@ public class Unit : MonoBehaviour, IComparable<Unit>
 
     Vector3 GetAvgPosition(Node[,] n)
     {
-        float x = ((n[0, 0].position.x + n[0, n.GetLength(n.Rank - 1) - 1].position.x) / 2) + Map.length / 2;
-        float z = ((n[0, 0].position.z + n[n.GetLength(n.Rank - 1) - 1, 0].position.z) / 2) + Map.length / 2;
-        return new Vector3(x - 0.01f, n[0, 0].position.y, z - 0.01f);
+        float x = ((n[0, 0].Position.x + n[0, n.GetLength(n.Rank - 1) - 1].Position.x) / 2) + Map.length / 2;
+        float z = ((n[0, 0].Position.z + n[n.GetLength(n.Rank - 1) - 1, 0].Position.z) / 2) + Map.length / 2;
+        return new Vector3(x - 0.01f, n[0, 0].Position.y, z - 0.01f);
     }
 
-    IEnumerator combatHanlder()
+    IEnumerator CombatHanlder()
     {
         UnitSearch search = null;
         while (true)
         {
             if (search == null)
             {
-                search = new UnitSearch(maxScoutRange, teamCode, Map.instance.getNodeFromLocation(transform.position));
+                search = new UnitSearch(maxScoutRange, teamCode, Map.instance.GetNodeFromLocation(transform.position));
                 while (search.status == UnitSearch.PathStatus.inProcess) yield return null ;
                 if (search.status == UnitSearch.PathStatus.succeeded)
                 {
@@ -460,7 +468,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
                         print("Search result is null");
                         continue;
                     }
-                    search.result.takeDamage(attackDamage);
+                    search.result.TakeDamage(attackDamage);
                 }
                 search = null;
             }
@@ -468,7 +476,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
         }
     }
     
-    public void takeDamage(float damage)
+    public void TakeDamage(float damage)
     {
         currentHealth -= damage;
         health.changeHealth(currentHealth / maxHealth);
@@ -481,7 +489,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
 
     public void OnDestroy()
     {
-        resetCurrentNodes(currentNodes);
+        ResetCurrentNodes(currentNodes);
         //UnitManager.manager.allUnits.Remove(this);
         //UnitSelection.selection.playerUnits.Remove(this);
     }

@@ -6,9 +6,9 @@ using System.Threading;
 public class UnitSearch
 {
     //Search range
-    int range = 0;
+    readonly int range = 0;
     //Player code will be used to identify teams
-    int teamCode = 0;
+    readonly int teamCode = 0;
 
     public enum PathStatus { inProcess, succeeded, failed };
     public PathStatus status = PathStatus.inProcess;
@@ -24,12 +24,12 @@ public class UnitSearch
         range = _range;
         teamCode = _teamCode;
 
-        ThreadStart startT = new ThreadStart(search);
+        ThreadStart startT = new ThreadStart(Search);
         thread = new Thread(startT);
         thread.Start();
     }
 
-    private void search()
+    private void Search()
     {
         status = PathStatus.inProcess;
         //Nodes to search
@@ -52,9 +52,9 @@ public class UnitSearch
                 return;
             }
 
-            foreach (Node n in Map.getNeighbors(current))
+            foreach (Node n in Map.GetNeighbors(current))
             {
-                if (n != null && !closedSet.Contains(n) && Vector3.Distance(start.position, n.position) <= range)
+                if (n != null && !closedSet.Contains(n) && Vector3.Distance(start.Position, n.Position) <= range)
                 {
                     if (!openSet.Contains(n))
                     {

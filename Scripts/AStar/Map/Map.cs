@@ -13,25 +13,25 @@ public class Map : MonoBehaviour
     public static int xSize = 0;
     public static int zSize = 0;
     public static float length = .5f;
-    public static Node[,] nodes;
+    public static Node[,] nodes = null;
 
     public bool mapIsReady = false;
     public bool cushionMade = false;
 
-    public GameObject nodeMarker;
-    public GameObject nodeMarker2;
-    public GameObject nodeMarker3;
+    public GameObject nodeMarker = null;
+    public GameObject nodeMarker2 = null;
+    public GameObject nodeMarker3 = null;
 
     private List<PathRequest> pathRequestQueue = new List<PathRequest>();
     private List<GroupPathRequest> pathRequests = new List<GroupPathRequest>();
-    PathFinderV2 aStar;
-    PathFinderA1 aStarA1;
-    PathFinderA2 aStarA2;
+    PathFinderV2 aStar = null;
+    //PathFinderA1 aStarA1 = null;
+    PathFinderA2 aStarA2 = null;
     List<Node> path = null;
     List<Vector3> vPath = null;
 
-    public Vector3 testPos;
-    public bool create;
+    public Vector3 testPos = Vector3.zero;
+    public bool create = false;
 
     public List<Node> testList = new List<Node>();
 
@@ -52,9 +52,9 @@ public class Map : MonoBehaviour
     private void Start()
     {
         instance = this;
-        StartCoroutine(setUpMap());
+        StartCoroutine(SetUpMap());
         //StartCoroutine(buildPaths());
-        StartCoroutine(buildPathsV2());
+        StartCoroutine(BuildPathsV2());
     }
 
     public bool showWalkableB = false;
@@ -70,13 +70,13 @@ public class Map : MonoBehaviour
                     if (n.claimed)
                     {
                         GameObject g = Instantiate(nodeMarker3);
-                        g.transform.position = n.position;
+                        g.transform.position = n.Position;
                         g.transform.localScale = vLength;
                     }
                     else
                     {
                         GameObject g = Instantiate(nodeMarker2);
-                        g.transform.position = n.position;
+                        g.transform.position = n.Position;
                         g.transform.localScale = vLength;
                     }
                 }
@@ -99,7 +99,7 @@ public class Map : MonoBehaviour
                 if (n.occCode != -1)
                 {
                     GameObject g = Instantiate(nodeMarker);
-                    g.transform.position = n.position;
+                    g.transform.position = n.Position;
                     g.transform.localScale = Vector3.one * length;
                     printedNodes.Add(g);
                 }
@@ -118,17 +118,17 @@ public class Map : MonoBehaviour
         if (showWalkableB)
         {
             showWalkableB = false;
-            showWalkable();
+            ShowWalkable();
         }
     }
 
     List<Node> alteredNodes = new List<Node>();
-    private void setUpNodes()
+    private void SetUpNodes()
     {
         int count = 0;
         foreach (Node n in Map.nodes)
         {
-            n.revert();
+            n.Revert();
             if (n.occCode != -1)
             {
                 alteredNodes.Add(n);
@@ -139,10 +139,46 @@ public class Map : MonoBehaviour
         Debug.Log("Count: " + count);
     }
 
-    private mapData buildData;
-    IEnumerator setUpMap()
+    private MapData buildData;
+    IEnumerator SetUpMap()
     {
-        if (DataSaver.instance.mapExists(mapName) && !makeNewMap)
+        xSize = 1000;
+        zSize = 1000;
+        CreateMap create = new CreateMap(true, length, xSize, zSize, mapName);
+        while (create.totalNodes == 0)
+        {
+            yield return null;
+        }
+        Debug.Log("Total nodes: " + create.totalNodes);
+        while (!create.mapIsReady)
+        {
+            CameraUI.instance.progressText.text = create.touchedNodes + "/" + create.totalNodes;
+            CameraUI.instance.progressBar.value = create.touchedNodes / create.totalNodes;
+            yield return null;
+        }
+        CameraUI.instance.progressText.text = create.touchedNodes + "/" + create.totalNodes;
+        CameraUI.instance.progressBar.value = create.touchedNodes / create.totalNodes;
+        nodes = create.nodes;
+        mapIsReady = true;
+        create = null;
+
+        GameObject g = Instantiate(nodeMarker);
+        g.transform.position = nodes[0, 0].Position;
+        g.transform.localScale = vLength;
+
+        g = Instantiate(nodeMarker2);
+        g.transform.position = nodes[0, nodes.GetLength(0) - 1].Position;
+        g.transform.localScale = vLength;
+
+        g = Instantiate(nodeMarker3);
+        g.transform.position = nodes[nodes.GetLength(0) - 1, 0].Position;
+        g.transform.localScale = vLength;
+
+        g = Instantiate(nodeMarker2);
+        g.transform.position = nodes[nodes.GetLength(0) - 1, nodes.GetLength(nodes.Rank - 1) - 1].Position;
+        g.transform.localScale = vLength;
+
+        /*if (DataSaver.instance.MapExists(mapName) && !makeNewMap)
         {
             CreateMap create = new CreateMap(false, length, xSize, zSize, mapName);
             while (create.totalNodes == 0) yield return null;
@@ -157,7 +193,7 @@ public class Map : MonoBehaviour
             CameraUI.instance.progressText.text = create.createdNodes + "/" + create.totalNodes;
             CameraUI.instance.progressBar.value = create.createdNodes / create.totalNodes;
 
-            nodes = create.nodes;
+            //nodes = create.nodes;
             xSize = create.xSize;
             zSize = create.zSize;
             //print("Node count: " + nodes.Length);
@@ -166,23 +202,24 @@ public class Map : MonoBehaviour
             g.transform.position = new Vector3(xSize / 2, 0, zSize / 2);
 
             g = Instantiate(nodeMarker);
-            g.transform.position = nodes[0, 0].position;
+            g.transform.position = nodes[0, 0].Position;
             g.transform.localScale = vLength;
 
             g = Instantiate(nodeMarker2);
-            g.transform.position = nodes[0, nodes.GetLength(0) - 1].position;
+            g.transform.position = nodes[0, nodes.GetLength(0) - 1].Position;
             g.transform.localScale = vLength;
 
             g = Instantiate(nodeMarker3);
-            g.transform.position = nodes[nodes.GetLength(0) - 1, 0].position;
+            g.transform.position = nodes[nodes.GetLength(0) - 1, 0].Position;
             g.transform.localScale = vLength;
 
             g = Instantiate(nodeMarker2);
-            g.transform.position = nodes[nodes.GetLength(0) - 1, nodes.GetLength(nodes.Rank - 1) - 1].position;
+            g.transform.position = nodes[nodes.GetLength(0) - 1, nodes.GetLength(nodes.Rank - 1) - 1].Position;
             g.transform.localScale = vLength;
 
             print("Finished loading map");
             mapIsReady = true;
+            create = null;
         }
         else
         {
@@ -190,8 +227,8 @@ public class Map : MonoBehaviour
             //print("Length: " + length + ", x size: " + xSize + ", Z size: " + zSize);
             if (xSize == 0 || zSize == 0)
             {
-                xSize = 2000;
-                zSize = 2000;
+                xSize = 1000;
+                zSize = 1000;
             }
             CreateMap m = new CreateMap(makeNewMap, length, xSize, zSize, mapName);
             while (m.totalNodes == 0)
@@ -210,24 +247,28 @@ public class Map : MonoBehaviour
             //print("Node count: " + nodes.Length);
 
             GameObject g = Instantiate(nodeMarker);
-            g.transform.position = nodes[0, 0].position;
+            g.transform.position = nodes[0, 0].Position;
             g.transform.localScale = vLength;
 
             g = Instantiate(nodeMarker2);
-            g.transform.position = nodes[0, nodes.GetLength(0) - 1].position;
+            g.transform.position = nodes[0, nodes.GetLength(0) - 1].Position;
             g.transform.localScale = vLength;
 
             g = Instantiate(nodeMarker3);
-            g.transform.position = nodes[nodes.GetLength(0) - 1, 0].position;
+            g.transform.position = nodes[nodes.GetLength(0) - 1, 0].Position;
             g.transform.localScale = vLength;
 
             g = Instantiate(nodeMarker2);
-            g.transform.position = nodes[nodes.GetLength(0) - 1, nodes.GetLength(nodes.Rank - 1) - 1].position;
+            g.transform.position = nodes[nodes.GetLength(0) - 1, nodes.GetLength(nodes.Rank - 1) - 1].Position;
             g.transform.localScale = vLength;
+
+            mapIsReady = true;
+
+            m = null;
 
 
             //Save map
-            mapData mData = new mapData();
+            /*mapData mData = new mapData();
             nodeData[,] data = new nodeData[(int)(xSize * (1 / length)), (int)(zSize * (1 / length))];
             for (int i = 0; i < (xSize * (1 / length)); i++)
             {
@@ -248,21 +289,21 @@ public class Map : MonoBehaviour
             //DataSaver.instance.saveMap(mData);
 
             mapIsReady = true;
-            print("Finished making and saving map");
-        }
+            print("Finished making and saving map");*/
+        //}
     }
 
-    void buildMap()
+    void BuildMap()
     {
 
     }
 
-    int createdNodes = 0;
-    float maxNodes = 0;
-    string dataPath = "";
-    private void loadMap()
+    //int createdNodes = 0;
+    //float maxNodes = 0;
+    //string dataPath = "";
+    private void LoadMap()
     {
-        print("Starting load map");
+        /*print("Starting load map");
         mapData mData = DataSaver.instance.getMap(mapName, dataPath);
 
         print("Read in mData");
@@ -282,22 +323,22 @@ public class Map : MonoBehaviour
                 nodes[i, j] = new Node(mData.mapNodes[i, j]);
             }
         }
-        mapIsReady = true;
+        mapIsReady = true;*/
     }
 
-    void showCost()
+    void ShowCost()
     {
         foreach (Node n in nodes)
         {
             if (!n.walkable)
                 continue;
             GameObject g = (n.moveCost == 0) ? Instantiate(nodeMarker) : Instantiate(nodeMarker2);
-            g.transform.position = n.position;
+            g.transform.position = n.Position;
             g.transform.localScale = Vector3.one * length;
         }
     }
 
-    void showNodes()
+    void ShowNodes()
     {
         foreach (Node n in nodes)
         {
@@ -306,12 +347,12 @@ public class Map : MonoBehaviour
                 continue;
             }
             GameObject g = Instantiate(nodeMarker);
-            g.transform.localScale = new Vector3(.5f, .5f * n.cushion, .5f);
-            g.transform.position = n.position;
+            //g.transform.localScale = new Vector3(.5f, .5f * n.cushion, .5f);
+            g.transform.position = n.Position;
         }
     }
 
-    void showWalkable()
+    void ShowWalkable()
     {
         foreach (Node n in nodes)
         {
@@ -323,18 +364,18 @@ public class Map : MonoBehaviour
             {
                 GameObject g = Instantiate(nodeMarker);
                 g.transform.localScale = Vector3.one * length;
-                g.transform.position = n.position;
+                g.transform.position = n.Position;
             }
             else
             {
                 GameObject g = Instantiate(nodeMarker2);
                 g.transform.localScale = Vector3.one * length;
-                g.transform.position = n.position;
+                g.transform.position = n.Position;
             }
         }
     }
 
-    void showCritical()
+    void ShowCritical()
     {
         foreach (Node n in nodes)
         {
@@ -342,20 +383,28 @@ public class Map : MonoBehaviour
             {
                 GameObject g = Instantiate(nodeMarker2);
                 g.transform.localScale = Vector3.one * length;
-                g.transform.position = n.position;
+                g.transform.position = n.Position;
             }
         }
     }
 
-    public void requestPath(Node start, Node goal, Unit u, int p, int sc)
+    public void RequestPath(Node start, Node goal, Unit u, int p, int sc)
     {
-        PathRequest r = new PathRequest();
-        r.start = start;
+        PathRequest r = new PathRequest()
+        {
+            start = start,
+            end = goal,
+            requestee = u,
+            size = u.size,
+            priority = p,
+            specialCode = sc
+        };
+        /*r.start = start;
         r.end = goal;
         r.requestee = u;
         r.size = u.size;
         r.priority = p;
-        r.specialCode = sc;
+        r.specialCode = sc;*/
         if (pathRequestQueue.Count > 0)
         {
             for (int i = pathRequestQueue.Count - 1; i >= 0; i--)
@@ -374,7 +423,7 @@ public class Map : MonoBehaviour
         }
     }
 
-    IEnumerator buildPaths()
+    IEnumerator BuildPaths()
     {
         while (!mapIsReady)
         {
@@ -417,7 +466,7 @@ public class Map : MonoBehaviour
             else if (building && vPath != null)
             {
                 building = false;
-                requestee.getPath(vPath);
+                requestee.GetPath(vPath);
                 /*foreach (Node n in testList)
                 {
                     GameObject g = Instantiate(nodeMarker);
@@ -450,12 +499,12 @@ public class Map : MonoBehaviour
         }
     }
 
-    public void receiveBatchPathRequest(GroupPathRequest req)
+    public void ReceiveBatchPathRequest(GroupPathRequest req)
     {
         pathRequests.Add(req);
     }
 
-    IEnumerator buildPathsV2()
+    IEnumerator BuildPathsV2()
     {
         while (!mapIsReady)
         {
@@ -512,7 +561,7 @@ public class Map : MonoBehaviour
                 for (int i = 0; i < destinations.Count; i++)
                 {
                     //print(destinations[i].Count);
-                    pathRequests[0].requestees[i].getPath(destinations[i]);
+                    pathRequests[0].requestees[i].GetPath(destinations[i]);
                 }
                 pathRequests.RemoveAt(0);
                 yield return null;
@@ -556,10 +605,10 @@ public class Map : MonoBehaviour
         StopCoroutine(RunAStarA1());
     }
 
-    public Node getNodeFromLocation(Vector3 location)
+    public Node GetNodeFromLocation(Vector3 location)
     {
-        float x = getClosestFloat(location.x * (1 / length));
-        float z = getClosestFloat(location.z * (1 / length));
+        float x = GetClosestFloat(location.x * (1 / length));
+        float z = GetClosestFloat(location.z * (1 / length));
 
         //print("X size: " + xSize);
         //print("Z size: " + zSize);
@@ -572,7 +621,7 @@ public class Map : MonoBehaviour
         return nodes[Mathf.FloorToInt(x), Mathf.FloorToInt(z)];
     }
 
-    private float getClosestFloat(float f)
+    private float GetClosestFloat(float f)
     {
         if (f % 1 == 0)
         {
@@ -596,7 +645,7 @@ public class Map : MonoBehaviour
         }
     }
 
-    public static List<Node> getNeighbors(Node n)
+    public static List<Node> GetNeighbors(Node n)
     {
         List<Node> neighbors = new List<Node>();
         int xIndex = n.xIndex;
@@ -651,17 +700,17 @@ public class Map : MonoBehaviour
         return neighbors;
     }
 
-    private void printNodes(List<Node> p)
+    private void PrintNodes(List<Node> p)
     {
         foreach (Node n in nodes)
         {
             GameObject g = Instantiate(nodeMarker);
-            g.transform.localPosition = n.position;
+            g.transform.localPosition = n.Position;
             g.transform.localScale = Vector3.one * length;
         }
     }
 
-    public void sendMoveLocations(List<Unit> units)
+    public void SendMoveLocations(List<Unit> units)
     {
         MinHeap<Unit> sorted = new MinHeap<Unit>();
         sorted.addItems(units);
@@ -671,7 +720,7 @@ public class Map : MonoBehaviour
         }
     }
 
-    private void testPathA1(Node start, Node goal, int code)
+    private void TestPathA1(Node start, Node goal, int code)
     {
         int size = 2;
         int count = 0;
@@ -679,7 +728,7 @@ public class Map : MonoBehaviour
 
         foreach (Node n in Map.nodes)
         {
-            n.revert();
+            n.Revert();
             if (n.occCode != -1 && n.occCode != code)
             {
                 alteredNodes.Add(n);
@@ -690,7 +739,7 @@ public class Map : MonoBehaviour
         Debug.Log("Count: " + count);
 
         Debug.Log("Unit size: " + size * (1 / Map.length));
-        if (start == null || goal == null)
+        if (start == null || goal == default(Node))
         {
             Debug.Log("Start or Goal are null, pathfinding cant be completed");
             return;
@@ -718,20 +767,20 @@ public class Map : MonoBehaviour
                 break;
             }
 
-            if (size > getDist(currentNode) && (currentNode.occCode == -1 || currentNode.occCode == code))
+            if (size > GetDist(currentNode) && (currentNode.occCode == -1 || currentNode.occCode == code))
             {
                 Debug.Log("Ignoring start node");
                 continue;
             }
 
-            foreach (Node n in Map.getNeighbors(currentNode))
+            foreach (Node n in Map.GetNeighbors(currentNode))
             {
                 if (!n.walkable || closedSet.Contains(n))
                 {
                     continue;
                 }
 
-                if (size * (1 / Map.length) > getDist(n))
+                if (size * (1 / Map.length) > GetDist(n))
                 {
                     Debug.Log("Ignoring node");
                     continue;
@@ -768,7 +817,7 @@ public class Map : MonoBehaviour
             foreach (Node n in path)
             {
                 GameObject g = Instantiate(nodeMarker2);
-                g.transform.position = n.position;
+                g.transform.position = n.Position;
                 g.transform.localScale = Vector3.one * length;
             }
         }
@@ -784,7 +833,7 @@ public class Map : MonoBehaviour
         return (14 * dstX) + (10 * (dstZ - dstX));
     }
 
-    float getDist(Node n)
+    float GetDist(Node n)
     {
         int num = 1;
         int x = n.xIndex;
@@ -801,7 +850,7 @@ public class Map : MonoBehaviour
                 {
                     if (!Map.nodes[x2, z2].walkable)
                     {
-                        return Vector3.Distance(n.position, Map.nodes[x2, z2].position);
+                        return Vector3.Distance(n.Position, Map.nodes[x2, z2].Position);
                     }
                 }
                 else
@@ -822,7 +871,7 @@ public class Map : MonoBehaviour
                     {
                         z2 = Mathf.FloorToInt(zSize * (1 / length)) - 1;
                     }
-                    return Vector3.Distance(n.position, Map.nodes[x2, z2].position);
+                    return Vector3.Distance(n.Position, Map.nodes[x2, z2].Position);
                 }
             }
 
@@ -834,7 +883,7 @@ public class Map : MonoBehaviour
                 {
                     if (!Map.nodes[x2, z2].walkable)
                     {
-                        return Vector3.Distance(n.position, Map.nodes[x2, z2].position);
+                        return Vector3.Distance(n.Position, Map.nodes[x2, z2].Position);
                     }
                 }
                 else
@@ -855,7 +904,7 @@ public class Map : MonoBehaviour
                     {
                         z2 = Mathf.FloorToInt(zSize * (1 / length)) - 1;
                     }
-                    return Vector3.Distance(n.position, Map.nodes[x2, z2].position);
+                    return Vector3.Distance(n.Position, Map.nodes[x2, z2].Position);
                 }
             }
 
@@ -867,7 +916,7 @@ public class Map : MonoBehaviour
                 {
                     if (!Map.nodes[x2, z2].walkable)
                     {
-                        return Vector3.Distance(n.position, Map.nodes[x2, z2].position);
+                        return Vector3.Distance(n.Position, Map.nodes[x2, z2].Position);
                     }
                 }
                 else
@@ -888,7 +937,7 @@ public class Map : MonoBehaviour
                     {
                         z2 = Mathf.FloorToInt(zSize * (1 / length)) - 1;
                     }
-                    return Vector3.Distance(n.position, Map.nodes[x2, z2].position);
+                    return Vector3.Distance(n.Position, Map.nodes[x2, z2].Position);
                 }
             }
 
@@ -900,7 +949,7 @@ public class Map : MonoBehaviour
                 {
                     if (!Map.nodes[x2, z2].walkable)
                     {
-                        return Vector3.Distance(n.position, Map.nodes[x2, z2].position);
+                        return Vector3.Distance(n.Position, Map.nodes[x2, z2].Position);
                     }
                 }
                 else
@@ -921,45 +970,49 @@ public class Map : MonoBehaviour
                     {
                         z2 = Mathf.FloorToInt(zSize * (1 / length)) - 1;
                     }
-                    return Vector3.Distance(n.position, Map.nodes[x2, z2].position);
+                    return Vector3.Distance(n.Position, Map.nodes[x2, z2].Position);
                 }
             }
             num++;
         }
     }
 
-    public void addGroupPathRequest(Vector3 _targetPos, List<Unit> _requestUnits)
+    public void AddGroupPathRequest(Vector3 _targetPos, List<Unit> _requestUnits)
     {
-        StartCoroutine(buildGroupPathRequest(_targetPos, _requestUnits));
+        StartCoroutine(BuildGroupPathRequest(_targetPos, _requestUnits));
     }
 
-    IEnumerator buildGroupPathRequest(Vector3 t, List<Unit> lst)
+    IEnumerator BuildGroupPathRequest(Vector3 t, List<Unit> lst)
     {
-        PlacementSearch search = new PlacementSearch(lst, Map.instance.getNodeFromLocation(t));
+        PlacementSearch search = new PlacementSearch(lst, Map.instance.GetNodeFromLocation(t));
         while (search.status == 0) yield return null;
         if (search.status == 2)
         {
             print("Search failed");
-            StopCoroutine(buildGroupPathRequest(t, lst));
+            StopCoroutine(BuildGroupPathRequest(t, lst));
         }
-        print("Finished search");
-        GroupPathRequest req = new GroupPathRequest();
-        req.requests = new List<PathRequest>();
-        req.requestees = UnitSelection.selection.playerUnits;
+        print("Finished search : " + search.status);
+        GroupPathRequest req = new GroupPathRequest()
+        {
+            requests = new List<PathRequest>(),
+            requestees = UnitSelection.selection.playerUnits
+        };
+       /*req.requests = new List<PathRequest>();
+        req.requestees = UnitSelection.selection.playerUnits;*/
         //print("Movement locations: " + search.movePos.Count);
         if (search.movePos.Count != lst.Count)
         {
             print("Units: " + lst.Count + ", Locs: " + search.movePos.Count);
-            StopCoroutine(buildGroupPathRequest(t, lst));
+            StopCoroutine(BuildGroupPathRequest(t, lst));
         }
         else
         {
             for (int i = 0; i < lst.Count; i++)
             {
-                PathRequest r = UnitSelection.selection.playerUnits[i].makePathRequest(search.movePos[i], 0, 0);
+                PathRequest r = UnitSelection.selection.playerUnits[i].MakePathRequest(search.movePos[i], 0, 0);
                 req.requests.Add(r);
             }
-            receiveBatchPathRequest(req);
+            ReceiveBatchPathRequest(req);
             print("Finished");
         }
     }

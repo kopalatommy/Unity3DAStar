@@ -6,13 +6,11 @@ using System.IO;
 using System.Collections.Generic;
 using System.Collections;
 
-//If a bunch of nodes are null, check the position of the map, all areas of the map should be above 0. IE, if length = 100x100 than positon should = 50,0,50 
-
-public class CreateMap
+public class CreateMapV2
 {
     public static CreateMap instance;
 
-    
+
     public static Vector2 nLength;
 
     public bool mapIsReady = false;
@@ -34,11 +32,8 @@ public class CreateMap
     public bool finsihed = false;
 
     readonly string dataPath = "";
-    public CreateMap(bool makeNewMap, float _length, int _xSize, int _zSize, string _mapName)
+    public CreateMapV2(bool makeNewMap, float _length, int _xSize, int _zSize, string _mapName)
     {
-        Debug.Log("Size " + System.Runtime.InteropServices.Marshal.SizeOf(new NodeData2()));
-        Debug.Log("Size " + System.Runtime.InteropServices.Marshal.SizeOf(new NodeData()));
-
         length = _length;
         xSize = _xSize;
         zSize = _zSize;
@@ -54,7 +49,7 @@ public class CreateMap
         }
         else
         {
-            ThreadStart start = new ThreadStart(LoadMap);
+            ThreadStart start = new ThreadStart(loadMap);
             Thread thread = new Thread(start);
             thread.Start();
         }
@@ -130,16 +125,10 @@ public class CreateMap
             }
             xIndex++;
         }
-
-        ThreadStart start = new ThreadStart(MarkCritical);
+        ThreadStart start = new ThreadStart(makeCushion);
         Thread thread = new Thread(start);
         thread.Start();
-
-        /*ThreadStart start = new ThreadStart(MakeCushion);
-        Thread thread = new Thread(start);
-        thread.Start();
-        //makeCushion();*/
-        //BuildWithThreads();
+        //makeCushion();
     }
 
     float GetDist(Node n)
@@ -294,7 +283,7 @@ public class CreateMap
         }
     }
 
-    /*void MakeCushion()
+    void makeCushion()
     {
         totalNodes = (xSize * (1 / length)) * (zSize * (1 / length));
 
@@ -303,17 +292,20 @@ public class CreateMap
             for (int z = 0; z < zSize * (1 / length); z++)
             {
                 touchedNodes++;
-                nodes[x, z].cushion = GetDist(nodes[x, z]);
+                //nodes[x, z].cushion = GetDist(nodes[x, z]);
             }
         }
         mapIsReady = true;
 
-        MarkCritical();
+        markCritical();
 
-        SaveMap();
-    }*/
+        Debug.Log("Saving map");
+        IEnumerator save = saveMap();
+        while (save.MoveNext()) ;
+        Debug.Log("Finished saving");
+    }
 
-    List<Node> GetNeighbors(Node n)
+    List<Node> getNeighbors(Node n)
     {
         List<Node> neighbors = new List<Node>();
         int xIndex = n.xIndex;
@@ -368,60 +360,94 @@ public class CreateMap
         return neighbors;
     }
 
-    public void MarkCritical()
+    public void markCritical()
     {
         foreach (Node n in nodes)
         {
-            touchedNodes++;
-            foreach (Node o in GetNeighbors(n))
+            foreach (Node o in getNeighbors(n))
             {
-                if (!o.walkable)
+                if (o.walkable)
                 {
                     n.critical = true;
                     break;
                 }
             }
         }
-        mapIsReady = true;
-        //SaveMap();
     }
 
-    void SaveMap()
+    //////
+    //Steps
+    //1.Build Map
+    //2.Convert map nodes into nde data
+    //3.Split up map into sections in structs
+    //4.Save sections in mapData/mapName
+    //  save structs as mapName#.dat in folder
+    IEnumerator saveMap()
     {
-        Debug.Log("Saving map");
-        //UnityEngine.Debug.Log("Nodes: " + nodes.Length);
-        MapData mData = new MapData()
-        {
-            mName = mapName,
-            //mapNodes = nodes,
-            xSize = xSize,
-            zSize = zSize,
-            nodeLength = length
-        };
-        /*mData.mName = mapName;
-        mData.mapNodes = nodes;
-        mData.xSize = xSize;
-        mData.zSize = zSize;
-        mData.nodeLength = length;*/
+        yield return null;
+        //int walkable = 0;
+        //int nonWalkable = 0;
 
-        NodeData[,] nData = new NodeData[Mathf.FloorToInt(xSize * (1 / length)), Mathf.FloorToInt(zSize * (1 / length))];
-        for (int i = 0; i < xSize * (1 / length); i++)
+        //Step one is already done
+
+
+        //Step 2 convert into mapData
+        /*Debug.Log("Saving map");
+        nodeData[,] data = new nodeData[(int)(xSize * (1 / length)), (int)(zSize * (1 / length))];
+        for (int i = 0; i < (xSize * (1 / length)); i++)
         {
-            for (int j = 0; j < zSize * (1 / length); j++)
+            for (int j = 0; j < (zSize * (1 / length)); j++)
             {
-                nData[i, j].Populate(nodes[i,j]);
+                nodeData n = new nodeData();
+                n.populate(nodes[i, j]);
+                data[i, j] = n;
+            }
+            yield return null;
+        }
+
+        //Step 3 split up map into sections
+        int xSections = Mathf.FloorToInt((xSize * (1/length)) / 100000);
+        int zSections = Mathf.FloorToInt((xSize * (1 / length)) / 100000);
+        mapData[,] split = new mapData[xSections, zSections];
+
+        for (int x = 0; x < xSections; x++)
+        {
+            for (int z = 0; z < zSections; z++)
+            {
+                split[x,z] = new
             }
         }
-        mData.mapNodes = nData;
 
-        Debug.Log("Build map data");
+
+        mapData mData = new mapData();
+        mData.mName = mapName;
+        mData.mapNodes = data;
+        mData.xSize = xSize;
+        mData.zSize = zSize;
+        mData.nodeLength = length;
+
+        if (Directory.Exists("/mapData/" + mData.mName))
+        {
+            Directory.Delete("/mapData/" + mData.mName);
+        }
 
         //DataSaver.instance.saveMap(mData);
-        if (File.Exists(dataPath + "/mapData/" + mData.mName + ".dat"))
+        /*if (File.Exists(dataPath + "/mapData/" + mData.mName + ".dat"))
         {
             File.Delete(dataPath + "/mapData/" + mData.mName + ".dat");
             Debug.Log("Deleted file");
+        }*/
+
+        /*int numberOfSections = Mathf.FloorToInt(createdNodes / 100000);
+        for (int i = 0; i < numberOfSections / 2; i++)
+        {
+            for (int j = 0; j < numberOfSections / 2; j++)
+            {
+                mapSection s = new mapSection();
+                s.
+            }
         }
+
         BinaryFormatter bf = new BinaryFormatter();
         FileStream file = File.Create(dataPath + "/mapData/" + mData.mName + ".dat");
         bf.Serialize(file, mData);
@@ -430,19 +456,22 @@ public class CreateMap
         bf = null;
 
         //Debug.Log("Walkable: " + walkable + ", non walkable: " + nonWalkable);
-        mapIsReady = true;
-
-        Debug.Log("Finished saving map");
+        mapIsReady = true;*/
         //Debug.Log("Finished making and saving map");
     }
 
+    /*mapData getMapSection(int x, int z)
+    {
+        mapData m = new mapData();
+        m.mName = "1";
+    }*/
+
     public float maxNodes = 0;
     public float createdNodes = 0;
-    void LoadMap()
+    void loadMap()
     {
-        Debug.Log("Loading map");
-        MapData mData = DataSaver.instance.GetMap(mapName, dataPath);
-        Debug.Log("Got map");
+        //Debug.Log("Load map");
+        /*mapData mData = DataSaver.instance.getMap(mapName, dataPath);
 
         length = mData.nodeLength;
         xSize = mData.xSize;
@@ -450,224 +479,25 @@ public class CreateMap
 
         totalNodes = xSize * (1 / length) * (zSize * (1 / length));
         createdNodes = 0;
-        Debug.Log(mData.mapNodes.Length);
-        Map.nodes = new Node[Mathf.FloorToInt(xSize * (1 / length)), Mathf.FloorToInt(zSize * (1 / length))];
-        //Map.nodes = mData.mapNodes;
-        //Map.nodes = new Node[Mathf.FloorToInt(xSize * (1 / length)), Mathf.FloorToInt(zSize * (1 / length))];
+
+        nodes = new Node[(int)(xSize * (1 / length)), (int)(zSize * (1 / length))];
         for (int i = 0; i < xSize * (1 / length); i++)
         {
             for (int j = 0; j < zSize * (1 / length); j++)
             {
-                NodeData n = mData.mapNodes[i, j];
-                Map.nodes[i, j] = new Node(n.isWalkable, new Vector3(i / 2, n.y, j / 2), i, j, n.moveCost/*, n.cushion*/);
+                createdNodes++;
+                nodes[i, j] = new Node(mData.mapNodes[i, j]);
             }
         }
-        mapIsReady = true;
-        Debug.Log("Nodes: " + Map.nodes.Length);
-    }
-
-
-
-
-
-
-
-
-    void BuildWithThreads()
-    {
-        totalNodes = (xSize * (1 / length)) * (zSize * (1 / length));
-
-        Debug.Log("XSize: " + xSize + ", zSize: " + zSize);
-        Debug.Log("Lengths(" + (xSize * (1 / length)) + ", " + (zSize * (1 / length)) + ")");
-        Debug.Log("Total nodes: " + ((xSize * (1 / length)) * (zSize * (1 / length)) ));
-        Debug.Log("Sections: " + ((xSize * (1 / length)) / 100) + ", left behind: " + ((xSize * (1 / length)) % 100));
-        Debug.Log("Length: " + xSize * (1 / length) / 20);
-
-        int sections = 0;
-
-        for (int i = 0; i < (xSize * (1 / length)); i += Mathf.FloorToInt((xSize * (1 / length)) / 100))
-        {
-            for (int j = 0; j < (zSize * (1 / length)); j += Mathf.FloorToInt((zSize * (1 / length)) / 100))
-            {
-                //Debug.Log("Starting thread");
-                //ThreadPool.QueueUserWorkItem(new WaitCallback(BuildSection(Process, 0, 0, 0, 0)));
-                ThreadPool.QueueUserWorkItem(new WaitCallback(BuildSection));
-                sections++;
-            }
-        }
-
-        Debug.Log("Created " + sections + " sections");
-
-
-
-        /*for (int x = 0; x < xSize * (1 / length); x++)
-        {
-            for (int z = 0; z < zSize * (1 / length); z++)
-            {
-                touchedNodes++;
-                nodes[x, z].cushion = GetDist(nodes[x, z]);
-            }
-        }
-        mapIsReady = true;
-
-        MarkCritical();
-
-        SaveMap();*/
-    }
-
-    int xStart = 0;
-    int xStop = 10000;
-    int zStart = 0;
-    int zStop = 10000;
-
-    int threadIndex = 0;
-
-    Mutex mutex = new Mutex();
-    //Mutex metex = new Mutex();
-    void BuildSection(object callback)
-    {
-        mutex.WaitOne();
-
-        threadIndex += 1;
-
-        //Debug.Log(threadIndex + " has entered the mutex");
-
-        int mXStart = xStart;
-        int mXStop = xStop;
-        int mZStart = zStart;
-        int mZStop = zStop;
-        int mTouchedNodes = 0;
-
-        if (xStop == (xSize * (1 / length)))
-        {
-            xStart = 0;
-            xStop = Mathf.FloorToInt((xSize * (1 / length)) / 20);
-            zStart += Mathf.FloorToInt((zSize * (1 / length)) / 20);
-            zStop += Mathf.FloorToInt((zSize * (1 / length)) / 20);
-        }
-        else
-        {
-            xStart += Mathf.FloorToInt((xSize * (1 / length)) / 20);
-            xStop += Mathf.FloorToInt((xSize * (1 / length)) / 20);
-        }
-
-        //Debug.Log(threadIndex + " is releasing the mutex");
-
-
-        mutex.ReleaseMutex();
-
-        //Debug.Log("X Range(" + mXStart + ", " + mXStop + ")");
-        //Debug.Log("Z Range(" + mZStart + ", " + mZStop + ")");
-
-        for (int i = xStart; i < xStop; i++)
-        {
-            for (int j = zStart; j < zStop; j++)
-            {
-                //Debug.Log("("+i+","+j+")");
-                /*nodes[i, j].cushion = GetDist(nodes[i, j]);
-                foreach (Node n in GetNeighbors(nodes[i,j]))
-                {
-                    if (!n.walkable)
-                    {
-                        nodes[i,j].critical = true;
-                        break;
-                    }
-                }*/
-                mTouchedNodes++;
-                //touchedNodes++;
-            }
-        }
-        Debug.Log("Section nodes: " + mTouchedNodes + ", " + ( (xStop - xStart) * (zStop - zStart) ) );
-    }
-    /*void BuildSection(int xStart, int xStop, int zStart, int zStop)
-    {
-
-    }*/
-    /*void BuildSection(object callback, int xStart, int xStop, int zStart, int zStop)
-    {
-        
-    }*/
-
-    /*int testV
-    {
-        get
-        {
-            return testV;
-        }
-        set
-        {
-            metex.WaitOne();
-            testV = value;
-            metex.ReleaseMutex();
-        }
-    }*/
-
-    int testVal = 0;
-    void test(object callback)
-    {
-        testVal += 1;
-        Debug.Log(testVal);
+        mapIsReady = true;*/
+        //Debug.Log("Nodes: " + nodes.Length);
     }
 }
 
 [Serializable]
-public struct NodeData2
+struct mapSection
 {
-    public float x, y, z;
-    public int xIndex, zIndex;
-    //public float cushion;
-    public bool isWalkable;
-    public float moveCost;
-    public bool critical;
-
-    public void Populate(Node n)
-    {
-        x = n.x;
-        y = n.y;
-        z = n.z;
-
-        xIndex = n.xIndex;
-        zIndex = n.zIndex;
-
-        //cushion = n.cushion;
-
-        isWalkable = n.walkable;
-
-        moveCost = n.moveCost;
-
-        critical = n.critical;
-    }
-
-    public override string ToString()
-    {
-        return "Node data located at " + x + ", " + y + ", " + z + " is walkable: " + isWalkable;
-    }
-}
-
-[Serializable]
-public struct NodeData
-{
-    public float y;
-    //public float cushion;
-    public int moveCost;
-    public bool isWalkable;
-
-    public void Populate(Node n)
-    {
-        y = n.y;
-        //cushion = n.cushion;
-        isWalkable = n.walkable;
-        moveCost = n.moveCost;
-    }
-}
-
-[Serializable]
-public struct MapData
-{
-    public string mName;
-    //public Node[,] mapNodes;
-    public NodeData[,] mapNodes;
-    public int xSize;
-    public int zSize;
-    public float nodeLength;
+    int sideCount;
+    Node[,] section;
+    Vector2Int index;
 }

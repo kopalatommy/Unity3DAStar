@@ -34,7 +34,7 @@ public class UnitSelection : MonoBehaviour
                     i = 1000;
                     continue;
                 }
-                selected[i].setMarker(false);
+                selected[i].SetMarker(false);
             }
             isSelecting = true;
             selected = new List<Unit>();
@@ -61,11 +61,11 @@ public class UnitSelection : MonoBehaviour
                 if (u == null) continue;
                 if (inBounds(u.gameObject))
                 {
-                    u.setMarker(true);
+                    u.SetMarker(true);
                 }
                 else
                 {
-                    u.setMarker(false);
+                    u.SetMarker(false);
                 }
             }
         }
@@ -78,7 +78,7 @@ public class UnitSelection : MonoBehaviour
             {
                 //print("Started search, " + selected.Count);
                 //sendMoveLoc(hit.point);
-                Map.instance.addGroupPathRequest(hit.point, selected);
+                Map.instance.AddGroupPathRequest(hit.point, selected);
             }
             else
             {
@@ -124,7 +124,7 @@ public class UnitSelection : MonoBehaviour
             {
                 if (placed[i, j] != null)
                 {
-                    placed[i, j].requestPath(position, 0, 0);
+                    placed[i, j].RequestPath(position, 0, 0);
                     position.x += placed[i, j].size * 2;
                     increase = placed[i, j].size;
                 }
