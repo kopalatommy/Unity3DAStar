@@ -42,7 +42,8 @@ public class UnitManager : MonoBehaviour
 
     public Unit getUnitFromUnitCodes(int code)
     {
-        return unitCodes[code];
+        if (unitCodes.ContainsKey(code)) return unitCodes[code];
+        else return null;
     }
 
     public void addUnit(int key, Unit u)

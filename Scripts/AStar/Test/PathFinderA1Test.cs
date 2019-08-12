@@ -46,10 +46,10 @@ public class PathFinderA1Test : MonoBehaviour
     private void SetUpNodes()
     {
         int count = 0;
-        foreach (Node n in Map.nodes)
+        foreach (Node n in MapManager.nodes)
         {
             n.Revert();
-            if (n.occCode != -1 && n.occCode != code)
+            if (n.GetOccCode() != -1 && n.GetOccCode() != code)
             {
                 /*GameObject g = Instantiate(Map.instance.nodeMarker);
                 g.transform.position = n.position;
@@ -73,7 +73,7 @@ public class PathFinderA1Test : MonoBehaviour
     private void ResetNodes()
     {
         //print("Resetting nodes");
-        foreach (Node n in Map.nodes)
+        foreach (Node n in MapManager.nodes)
         {
             n.Revert();
             if (alteredNodes.Contains(n))
@@ -85,7 +85,7 @@ public class PathFinderA1Test : MonoBehaviour
 
     private void AStar()
     {
-        Debug.Log("Unit size: " + size * (1 / Map.length));
+        Debug.Log("Unit size: " + size * (1 / MapManager.length));
         if (start == null || goal == null)
         {
             Debug.Log("Start or Goal are null, pathfinding cant be completed");
@@ -123,14 +123,14 @@ public class PathFinderA1Test : MonoBehaviour
                 continue;
             }
 
-            foreach (Node n in Map.GetNeighbors(currentNode))
+            foreach (Node n in MapManager.instance.GetNeighbors(currentNode))
             {
                 if (!n.walkable || closedSet.Contains(n))
                 {
                     continue;
                 }
 
-                if (size * (1 / Map.length) > GetDist(n))
+                if (size * (1 / MapManager.length) > GetDist(n))
                 {
                     //Debug.Log("Ignoring node: " + (size * (1 / Map.length)) + " < " + getDist(n));
                     closedSet.Add(n);
@@ -203,9 +203,9 @@ public class PathFinderA1Test : MonoBehaviour
         foreach (Node n in path)
         {
             vPath.Add(n.Position);
-            GameObject g = Instantiate(Map.instance.nodeMarker2);
+            GameObject g = Instantiate(MapManager.instance.nodeMarker2);
             g.transform.position = n.Position;
-            g.transform.localScale = Vector3.one * Map.length;
+            g.transform.localScale = Vector3.one * MapManager.length;
         }
         ResetNodes();
         done = true;
@@ -305,9 +305,9 @@ public class PathFinderA1Test : MonoBehaviour
             {
                 distance = Vector3.Distance(e.Position, current);
                 current += change;
-                if (last != Map.instance.GetNodeFromLocation(current))
+                if (last != MapManager.instance.GetNodeFromLocation(current))
                 {
-                    last = Map.instance.GetNodeFromLocation(current);
+                    last = MapManager.instance.GetNodeFromLocation(current);
                     vPath.Add(current);
                 }
             }
@@ -330,7 +330,7 @@ public class PathFinderA1Test : MonoBehaviour
         {
             distance = Vector3.Distance(end, current);
             current += change;
-            if (!Map.instance.GetNodeFromLocation(current).walkable)
+            if (!MapManager.instance.GetNodeFromLocation(current).walkable)
             {
                 return false;
             }
@@ -354,12 +354,12 @@ public class PathFinderA1Test : MonoBehaviour
         int currentCost = 0;
 
         Vector3 current = a;
-        Vector3 change = (b - a) * Map.length;
+        Vector3 change = (b - a) * MapManager.length;
         float dist = Vector3.Distance(current, b);
 
         while (dist >= Vector3.Distance(current, b))
         {
-            currentCost += Map.instance.GetNodeFromLocation(current).moveCost;
+            currentCost += MapManager.instance.GetNodeFromLocation(current).moveCost;
             dist = Vector3.Distance(b, current);
             current += change;
         }
@@ -372,9 +372,9 @@ public class PathFinderA1Test : MonoBehaviour
         int num = 1;
         int x = n.xIndex;
         int z = n.zIndex;
-        float length = Map.length;
-        int xSize = Map.xSize;
-        int zSize = Map.zSize;
+        float length = MapManager.length;
+        int xSize = MapManager.instance.xSize;
+        int zSize = MapManager.instance.zSize;
 
         while (true)
         {
@@ -384,9 +384,9 @@ public class PathFinderA1Test : MonoBehaviour
                 int z2 = z - num;
                 if (x2 >= 0 && x2 < xSize * (1 / length) && z2 >= 0 && z2 < zSize * (1 / length))
                 {
-                    if (!Map.nodes[x2, z2].walkable)
+                    if (!MapManager.nodes[x2, z2].walkable)
                     {
-                        return Vector3.Distance(n.Position, Map.nodes[x2, z2].Position);
+                        return Vector3.Distance(n.Position, MapManager.nodes[x2, z2].Position);
                     }
                 }
                 else
@@ -407,7 +407,7 @@ public class PathFinderA1Test : MonoBehaviour
                     {
                         z2 = Mathf.FloorToInt(zSize * (1 / length)) - 1;
                     }
-                    return Vector3.Distance(n.Position, Map.nodes[x2, z2].Position);
+                    return Vector3.Distance(n.Position, MapManager.nodes[x2, z2].Position);
                 }
             }
 
@@ -417,9 +417,9 @@ public class PathFinderA1Test : MonoBehaviour
                 int z2 = z - num + i;
                 if (x2 >= 0 && x2 < xSize * (1 / length) && z2 >= 0 && z2 < zSize * (1 / length))
                 {
-                    if (!Map.nodes[x2, z2].walkable)
+                    if (!MapManager.nodes[x2, z2].walkable)
                     {
-                        return Vector3.Distance(n.Position, Map.nodes[x2, z2].Position);
+                        return Vector3.Distance(n.Position, MapManager.nodes[x2, z2].Position);
                     }
                 }
                 else
@@ -440,7 +440,7 @@ public class PathFinderA1Test : MonoBehaviour
                     {
                         z2 = Mathf.FloorToInt(zSize * (1 / length)) - 1;
                     }
-                    return Vector3.Distance(n.Position, Map.nodes[x2, z2].Position);
+                    return Vector3.Distance(n.Position, MapManager.nodes[x2, z2].Position);
                 }
             }
 
@@ -450,9 +450,9 @@ public class PathFinderA1Test : MonoBehaviour
                 int z2 = z + num;
                 if (x2 >= 0 && x2 < xSize * (1 / length) && z2 >= 0 && z2 < zSize * (1 / length))
                 {
-                    if (!Map.nodes[x2, z2].walkable)
+                    if (!MapManager.nodes[x2, z2].walkable)
                     {
-                        return Vector3.Distance(n.Position, Map.nodes[x2, z2].Position);
+                        return Vector3.Distance(n.Position, MapManager.nodes[x2, z2].Position);
                     }
                 }
                 else
@@ -473,7 +473,7 @@ public class PathFinderA1Test : MonoBehaviour
                     {
                         z2 = Mathf.FloorToInt(zSize * (1 / length)) - 1;
                     }
-                    return Vector3.Distance(n.Position, Map.nodes[x2, z2].Position);
+                    return Vector3.Distance(n.Position, MapManager.nodes[x2, z2].Position);
                 }
             }
 
@@ -483,9 +483,9 @@ public class PathFinderA1Test : MonoBehaviour
                 int z2 = z + num - i;
                 if (x2 >= 0 && x2 < xSize * (1 / length) && z2 >= 0 && z2 < zSize * (1 / length))
                 {
-                    if (!Map.nodes[x2, z2].walkable)
+                    if (!MapManager.nodes[x2, z2].walkable)
                     {
-                        return Vector3.Distance(n.Position, Map.nodes[x2, z2].Position);
+                        return Vector3.Distance(n.Position, MapManager.nodes[x2, z2].Position);
                     }
                 }
                 else
@@ -506,7 +506,7 @@ public class PathFinderA1Test : MonoBehaviour
                     {
                         z2 = Mathf.FloorToInt(zSize * (1 / length)) - 1;
                     }
-                    return Vector3.Distance(n.Position, Map.nodes[x2, z2].Position);
+                    return Vector3.Distance(n.Position, MapManager.nodes[x2, z2].Position);
                 }
             }
             num++;

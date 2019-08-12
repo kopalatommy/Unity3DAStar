@@ -36,8 +36,8 @@ public class CreateMap
     readonly string dataPath = "";
     public CreateMap(bool makeNewMap, float _length, int _xSize, int _zSize, string _mapName)
     {
-        Debug.Log("Size " + System.Runtime.InteropServices.Marshal.SizeOf(new NodeData2()));
-        Debug.Log("Size " + System.Runtime.InteropServices.Marshal.SizeOf(new NodeData()));
+        //Debug.Log("Size " + System.Runtime.InteropServices.Marshal.SizeOf(new NodeData2()));
+        //Debug.Log("Size " + System.Runtime.InteropServices.Marshal.SizeOf(new NodeData()));
 
         length = _length;
         xSize = _xSize;
@@ -451,7 +451,7 @@ public class CreateMap
         totalNodes = xSize * (1 / length) * (zSize * (1 / length));
         createdNodes = 0;
         Debug.Log(mData.mapNodes.Length);
-        Map.nodes = new Node[Mathf.FloorToInt(xSize * (1 / length)), Mathf.FloorToInt(zSize * (1 / length))];
+        MapManager.nodes = new Node[Mathf.FloorToInt(xSize * (1 / length)), Mathf.FloorToInt(zSize * (1 / length))];
         //Map.nodes = mData.mapNodes;
         //Map.nodes = new Node[Mathf.FloorToInt(xSize * (1 / length)), Mathf.FloorToInt(zSize * (1 / length))];
         for (int i = 0; i < xSize * (1 / length); i++)
@@ -459,19 +459,12 @@ public class CreateMap
             for (int j = 0; j < zSize * (1 / length); j++)
             {
                 NodeData n = mData.mapNodes[i, j];
-                Map.nodes[i, j] = new Node(n.isWalkable, new Vector3(i / 2, n.y, j / 2), i, j, n.moveCost/*, n.cushion*/);
+                MapManager.nodes[i, j] = new Node(n.isWalkable, new Vector3(i / 2, n.y, j / 2), i, j, n.moveCost/*, n.cushion*/);
             }
         }
         mapIsReady = true;
-        Debug.Log("Nodes: " + Map.nodes.Length);
+        Debug.Log("Nodes: " + MapManager.nodes.Length);
     }
-
-
-
-
-
-
-
 
     void BuildWithThreads()
     {

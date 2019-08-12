@@ -45,14 +45,14 @@ public class UnitSearch
             openSet.RemoveAt(0);
             closedSet.Add(current);
 
-            if ( current.occCode != -1 && UnitManager.manager.getUnitFromUnitCodes(current.occCode).teamCode != teamCode )
+            if ( current.GetOccCode() != -1 && UnitManager.manager.getUnitFromUnitCodes(current.GetOccCode()).teamCode != teamCode )
             {
-                result = UnitManager.manager.getUnitFromUnitCodes(current.occCode);
+                result = UnitManager.manager.getUnitFromUnitCodes(current.GetOccCode());
                 status = PathStatus.succeeded;
                 return;
             }
 
-            foreach (Node n in Map.GetNeighbors(current))
+            foreach (Node n in MapManager.instance.GetNeighbors(current))
             {
                 if (n != null && !closedSet.Contains(n) && Vector3.Distance(start.Position, n.Position) <= range)
                 {

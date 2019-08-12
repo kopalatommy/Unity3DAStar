@@ -42,7 +42,7 @@ public class GameManager : MonoBehaviour
     //and then perfroms actions dependent on the map being created
     IEnumerator WaitForMap()
     {
-        while (Map.instance == null || Map.instance.mapIsReady == false)
+        while (MapManager.instance == null || MapManager.instance.mapIsReady == false)
         {
             yield return null;
         }
@@ -89,22 +89,19 @@ public class GameManager : MonoBehaviour
             g.name = "Team2Unit" + i;
             //UnitSelection.selection.playerUnits.Add(u);
         }
-
-        //StartCoroutine(testSearch());
-        
     }
 
     IEnumerator TestSearch()
     {
         yield return new WaitForSeconds(10);
         print("Finished wait");
-        Map.instance.AddGroupPathRequest(new Vector3(50, 0, 50), UnitSelection.selection.playerUnits);
+        MapManager.instance.AddGroupPathRequest(new Vector3(50, 0, 50), UnitSelection.selection.playerUnits, 0);
     }
 
     IEnumerable HandleWaves()
     {
         List<GameObject> printedNodes = new List<GameObject>();
-        while (!Map.instance.mapIsReady)
+        while (!MapManager.instance.mapIsReady)
         {
             yield return null;
         }
@@ -112,9 +109,9 @@ public class GameManager : MonoBehaviour
         List<Node> temp = GetWaveBorder(50);
         foreach (Node n in temp)
         {
-            GameObject g = Instantiate(Map.instance.nodeMarker);
+            GameObject g = Instantiate(MapManager.instance.nodeMarker1);
             g.transform.position = n.Position;
-            g.transform.localScale = Map.vLength;
+            g.transform.localScale = MapManager.vLength;
         }
         /*while (gameInProgress)
         {
@@ -128,7 +125,7 @@ public class GameManager : MonoBehaviour
     public List<GameObject> printedNodes = new List<GameObject>();
     IEnumerator TestWaves()
     {
-        while (Map.instance == null || !Map.instance.mapIsReady)
+        while (MapManager.instance == null || !MapManager.instance.mapIsReady)
         {
             yield return null;
         }
@@ -147,14 +144,14 @@ public class GameManager : MonoBehaviour
 //            print("Wave: " + waveNum);
             foreach (Node n in temp)
             {
-                GameObject g = Instantiate(Map.instance.nodeMarker);
+                GameObject g = Instantiate(MapManager.instance.nodeMarker1);
                 g.transform.position = n.Position;
-                g.transform.localScale = Map.vLength;
+                g.transform.localScale = MapManager.vLength;
                 printedNodes.Add(g);
             }
             yield return new WaitForSeconds(1);
             waveNum++;
-            if (waveNum > Map.xSize * (1/Map.length))
+            if (waveNum > MapManager.instance.xSize * (1/ MapManager.length))
             {
                 waveNum = 0;
             }
@@ -166,32 +163,32 @@ public class GameManager : MonoBehaviour
     {
         List<Node> toReturn = new List<Node>();
 
-        int x = Map.xSize - (int)(1/Map.length);
-        int z = Map.xSize - (int)(1 / Map.length);
+        int x = MapManager.instance.xSize - (int)(1/ MapManager.length);
+        int z = MapManager.instance.xSize - (int)(1 / MapManager.length);
 
-//        Debug.Log("(" + x + "," + z + ")");
+        //Debug.Log("(" + x + "," + z + ")");
 
-        x -= ((int)(1 / Map.length) / 2) + (range / 2);
-        z += ((int)(1 / Map.length) / 2) + (range / 2);
-//        Debug.Log("(" + x + "," + z + ")");
+        x -= ((int)(1 / MapManager.length) / 2) + (range / 2);
+        z += ((int)(1 / MapManager.length) / 2) + (range / 2);
+        //Debug.Log("(" + x + "," + z + ")");
         for (int i = 0; i < range; i++)
         {
-            toReturn.Add(Map.nodes[x,z]);
+            toReturn.Add(MapManager.nodes[x,z]);
             x++;
         }
         for (int i = 0; i < range; i++)
         {
-            toReturn.Add(Map.nodes[x, z]);
+            toReturn.Add(MapManager.nodes[x, z]);
             z--;
         }
         for (int i = 0; i < range; i++)
         {
-            toReturn.Add(Map.nodes[x, z]);
+            toReturn.Add(MapManager.nodes[x, z]);
             x--;
         }
         for (int i = 0; i < range; i++)
         {
-            toReturn.Add(Map.nodes[x, z]);
+            toReturn.Add(MapManager.nodes[x, z]);
             z++;
         }
         return toReturn;

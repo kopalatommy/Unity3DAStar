@@ -78,7 +78,7 @@ public class UnitSelection : MonoBehaviour
             {
                 //print("Started search, " + selected.Count);
                 //sendMoveLoc(hit.point);
-                Map.instance.AddGroupPathRequest(hit.point, selected);
+                MapManager.instance.AddGroupPathRequest(hit.point, selected, 0);
             }
             else
             {

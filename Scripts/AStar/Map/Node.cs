@@ -19,6 +19,8 @@ public class Node : IComparable<Node>
     //public Vector3 position = Vector3.zero;
     public float x, y, z;
 
+    Action<Unit> onOccupy = null;
+
     public Vector3 Position
     {
         get
@@ -40,7 +42,22 @@ public class Node : IComparable<Node>
     //public int heapIndex = 0;
 
     //Unit avoidence
-    public int occCode = -1;
+    private int occCode = -1;
+
+    public void SetOccCode(Unit u)
+    {
+        occCode = u.occCode;
+        onOccupy?.Invoke(u);
+    }
+    public void SetOccCode(int val)
+    {
+        occCode = val;
+    }
+
+    public int GetOccCode()
+    {
+        return occCode;
+    }
 
     //PathFinding
     public bool critical = false;
@@ -69,6 +86,7 @@ public class Node : IComparable<Node>
     public void Revert()
     {
         //parent = null;
+        gCost = 0;
     }
 
     // AStar methods

@@ -1,10 +1,9 @@
-﻿using System.Collections;
+﻿using System;
 using System.Collections.Generic;
-using UnityEngine;
 using System.Threading;
-using System;
+using UnityEngine;
 
-public class PathFinderV2
+public class PathFinderA1V2
 {
     //Only set one true
     //public bool done = false;
@@ -24,18 +23,25 @@ public class PathFinderV2
 
     public List<Node> critical = new List<Node>();
 
-    public PathFinderV2(Node _start, Node _goal)
+    int occCode = 0;
+
+    /*public PathFinderA1V2(Node _start, Node _goal)
     {
         start = _start;
         goal = _goal;
         StartThread();
-    }
+    }*/
 
-    public PathFinderV2(PathRequest r)
+    public PathFinderA1V2(PathRequest r)
     {
         start = r.start;
         goal = r.end;
         width = r.requestee.size;
+        occCode = r.occCode;
+
+        //Debug.Log("Target: " + r.end.Position);
+        //MapManager.instance.printLocations.Add(r.end.Position);
+
         StartThread();
     }
 
@@ -98,19 +104,40 @@ public class PathFinderV2
 
             foreach (Node n in MapManager.instance.GetNeighbors(currentNode))
             {
-                if (!n.walkable || closedSet.Contains(n))
+                if (!n.walkable || closedSet.Contains(n) || (n.GetOccCode() != -1 && n.GetOccCode() != occCode) || !NodesAreOK(GetNodesFromLocation(n.Position)))
                 {
                     continue;
                 }
+                /*if (!n.walkable)
+                {
+                    Debug.Log("Node is unwalkable");
+                    continue;
+                }
+                if (closedSet.Contains(n))
+                {
+                    Debug.Log("Closed set contains node");
+                    continue;
+                }
+                if ((n.GetOccCode() != -1 && n.GetOccCode() != occCode))
+                {
+                    Debug.Log("Node is occupied: " + (n.GetOccCode() != -1) + ", " + (n.GetOccCode() != occCode));
+                    continue;
+                }
+                if (!NodesAreOK(GetNodesFromLocation(n.Position)))
+                {
+                    Debug.Log("Nodes are not ok");
+                    continue;
+                }*/
 
                 int newMovementCostToNeighbour = currentNode.gCost + GetDistance(currentNode, n) + n.moveCost;
-                if (newMovementCostToNeighbour <= n.gCost || !openSet.Contains(n))
+                bool temp = openSet.Contains(n);
+                if (newMovementCostToNeighbour <= n.gCost || !temp)
                 {
                     n.gCost = newMovementCostToNeighbour;
                     n.hCost = GetDistance(n, goal);
                     n.parent = currentNode;
 
-                    if (!openSet.Contains(n))
+                    if (!temp)
                         openSet.addItem(n);
                     else
                         openSet.UpdateItem(n);
@@ -120,7 +147,12 @@ public class PathFinderV2
         if (pathSuccess)
         {
             RetracePath();
+            //Debug.Log("Path succeeded");
         }
+        /*else
+        {
+            Debug.Log("Path failed, open count: " + openSet.size + ", closed count: " + closedSet.Count);
+        }*/
     }
 
     /*int GetDistance(Node nodeA, Node nodeB)
@@ -149,11 +181,142 @@ public class PathFinderV2
             currentNode = currentNode.parent;
         }
         path.Reverse();
-        SimplifyPath();
+
+        //path = criticalNodes(path);
+        path = ReduceCritical(criticalNodes(path));
+
+        vPath = NodeToVector(path);
+        //vPath = NodeToVector(ReduceCritical(criticalNodes(path)));
+
+        /*vPath = new List<Vector3>();
+        for (int i = 0; i < path.Count; i++)
+        {
+            vPath.Add(path[i].Position);
+        }*/
+
+        Debug.Log("Path contains goal: " + vPath.Contains(goal.Position));
+
+        //SimplifyPath();
         //path = simplified;
         //buildVPath();
         //done = true;
         status = 1;
+    }
+
+    List<Node> criticalNodes(List<Node> currentNodes)
+    {
+        List<Node> toReturn = new List<Node>();
+        Vector3 oldDir = Vector2.zero;
+
+        toReturn.Add(currentNodes[0]);
+        for (int i = 1; i < path.Count; i++)
+        {
+            Vector3 newDir = currentNodes[i - 1].Position - currentNodes[i].Position;
+            if (newDir != oldDir)
+            {
+                toReturn.Add(currentNodes[i - 1]);
+            }
+            else if (currentNodes[i].critical)
+            {
+                toReturn.Add(currentNodes[i]);
+            }
+            oldDir = newDir;
+        }
+        //Debug.Log("Finished getting critical nodes: " + currentNodes.Count + " to " + toReturn.Count);
+        return toReturn;
+    }
+
+    /*List<Node> ReduceCritical(List<Node> critical)
+    {
+        try
+        {
+            for (int i = 0; i < critical.Count; i++)
+            {
+                for (int j = critical.Count - 1; j > i + 1; j--)
+                {
+                    bool b;
+                    bool v;
+                    try
+                    {
+                        Debug.Log("J = critical.Count - 1: " + (critical.Count + 1) + ", " + j);
+                        v = ViableChange(critical[i], critical[j]);
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.Log("Critical count: " + critical.Count);
+                        Debug.Log("J: " + (i + 1));
+                        Debug.Log("Critical count: " + critical.Count + ", (" + i + "," + j + ")");
+                        Debug.Log("Viable change failed: " + e.ToString());
+                    }
+                    try
+                    {
+                        b = (MoveCost(critical[i].Position, critical[j].Position) <= MoveCost(critical.GetRange(i, j - i)));
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.Log("Move cost failed: " + e.ToString());
+                    }
+                    if (ViableChange(critical[i], critical[j]) && MoveCost(critical[i].Position, critical[j].Position) <= MoveCost(critical.GetRange(i, j - i)))
+                    {
+                        critical.RemoveRange(i + 1, j - i - 1);
+                    }
+                }
+            }
+        }
+        catch
+        {
+            Debug.Log("Error in reduce critical");
+            while (true) ;
+        }
+        return critical;
+    }*/
+
+    List<Node> ReduceCritical(List<Node> critical)
+    {
+        //Debug.Log("Starting reducing critical with " + critical.Count + " nodes");
+        bool changed = false;
+        while (true)
+        {
+            changed = false;
+            for (int i = 0; i < critical.Count; i++)
+            {
+                for (int j = critical.Count - 1; j > i + 1; j--)
+                {
+                    //bool b = (MoveCost(critical[i].Position, critical[j].Position) <= MoveCost(critical.GetRange(i, j - i))); ;
+                    //bool v = ViableChange(critical[i], critical[j]); ;
+                    if (ViableChange(critical[i], critical[j]) && MoveCost(critical[i].Position, critical[j].Position) <= MoveCost(critical.GetRange(i, j - i)))
+                    {
+                        critical.RemoveRange(i + 1, j - i - 1);
+                        changed = true;
+                        break;
+                    }
+                }
+                if (changed) break;
+            }
+            if (!changed) break;
+        }
+        //Debug.Log("Finished reducing critical to " + critical.Count + " nodes");
+        return critical;
+    }
+
+    List<Vector3> NodeToVector(List<Node> nodes)
+    {
+        List<Vector3> toReturn = new List<Vector3>();
+        for (int i = 0; i < nodes.Count - 1; i++)
+        {
+            Vector3 start = nodes[i].Position;
+            Vector3 end = nodes[i + 1].Position;
+            Vector3 current = nodes[i].Position;
+            float distance = Vector3.Distance(start, end);
+            Vector3 change = (end - start) * (1 / (distance / .5f));
+            while (distance >= Vector3.Distance(end, current))
+            {
+                distance = Vector3.Distance(end, current);
+                toReturn.Add(current);
+                current += change;
+            }
+        }
+        return toReturn;
     }
 
     private void SimplifyPath()
@@ -213,11 +376,36 @@ public class PathFinderV2
         }
         critical = simplified;
 
+        bool test = true;
+        foreach (Node n in simplified) if (!NodesAreOK(GetNodesFromLocation(n.Position))) test = false;
+        Debug.Log("All nodes are ok after critical: " + test);
+
         simplifiedVPath = new List<Vector3>();
-        foreach (Node n in  simplified)
+        foreach (Node n in simplified)
         {
             simplifiedVPath.Add(GetAvgPosition(GetNodesFromLocation(n.Position)));
         }
+
+        test = true;
+        foreach (Node n in simplified) if (!NodesAreOK(GetNodesFromLocation(n.Position))) test = false;
+        Debug.Log("All nodes are ok after simplified: " + test);
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         vPath = new List<Vector3>();
         for (int i = 0; i < simplifiedVPath.Count - 1; i++)
@@ -226,9 +414,8 @@ public class PathFinderV2
             Vector3 e = simplifiedVPath[i + 1];
             Vector3 last = s;
             Vector3 current = s;
-            Vector3 change = (e - s) * .01f;
-
             float distance = Vector3.Distance(e, current);
+            Vector3 change = (e - s) * (1 / (distance / .5f));
             while (distance >= Vector3.Distance(e, current))
             {
                 distance = Vector3.Distance(e, current);
@@ -241,9 +428,16 @@ public class PathFinderV2
             }
             vPath.RemoveAt(vPath.Count - 1);
         }
-        Vector3 temp = vPath[vPath.Count - 1];
-        vPath.RemoveAt(vPath.Count - 1);
-        vPath.Add(GetAvgPosition(GetNodesFromLocation(temp)));
+        if (vPath.Count != 0)
+        {
+            Vector3 temp = vPath[vPath.Count - 1];
+            vPath.RemoveAt(vPath.Count - 1);
+            vPath.Add(GetAvgPosition(GetNodesFromLocation(temp)));
+        }
+        test = true;
+        foreach (Vector3 n in vPath) if (!NodesAreOK(GetNodesFromLocation(n))) test = false;
+        Debug.Log("All nodes are ok after vPath: " + test);
+        //Debug.Log("Finished A2: " + vPath.Count);
     }
 
     /*void buildVPath()
@@ -275,7 +469,7 @@ public class PathFinderV2
         vPath.Add(temp);
     }*/
 
-    void BuildVPath()
+    void BuildVPath_old()
     {
         List<Vector3> newNodes = new List<Vector3>();
         vPath = new List<Vector3>();
@@ -304,6 +498,33 @@ public class PathFinderV2
         vPath.RemoveAt(vPath.Count - 1);
         vPath.Add(temp);*/
     }
+    void BuildVPath2()
+    {
+        List<Vector3> newNodes = new List<Vector3>();
+        vPath = new List<Vector3>();
+        for (int i = 0; i < simplified.Count - 1; i++)
+        {
+            Node start = simplified[i];
+            Node end = simplified[i + 1];
+            Vector3 current = start.Position;
+            float distance = Vector3.Distance(end.Position, current);
+            Vector3 change = (end.Position - start.Position) * (1 / (distance / .5f));
+            List<Node> nodes = new List<Node>();
+            Node last = null;
+
+            while (distance >= Vector3.Distance(end.Position, current))
+            {
+                distance = Vector3.Distance(end.Position, current);
+                current += change;
+                if (last != MapManager.instance.GetNodeFromLocation(current))
+                {
+                    last = MapManager.instance.GetNodeFromLocation(current);
+                    vPath.Add(current);
+                }
+            }
+            vPath.RemoveAt(vPath.Count - 1);
+        }
+    }
 
     bool ViableChange(Node s, Node g)
     {
@@ -313,17 +534,32 @@ public class PathFinderV2
         float distance = Vector3.Distance(end, current);
         Vector3 change = (end - start) * (1 / (distance / .5f));
         List<Node> nodes = new List<Node>();
+        int count = 0;
 
         //Debug.Log("Start: " + start + " Goal: " + end + " change: " + change + " distance: " + distance);
-
-        while (distance >= Vector3.Distance(end, current) && current != end)
+        try
         {
-            distance = Vector3.Distance(end, current);
-            current += change;
-            if (!MapManager.instance.GetNodeFromLocation(current).walkable)
+            while (distance >= Vector3.Distance(end, current) && current != end)
             {
-                return false;
+                count++;
+                distance = Vector3.Distance(end, current);
+                current += change;
+                //Node toTest = MapManager.instance.GetNodeFromLocation(current);
+                if (!NodesAreOK(GetNodesFromLocation(current)))
+                {
+                    return false;
+                }
+
+                /*if (!toTest.walkable || (toTest.GetOccCode() != occCode && toTest.GetOccCode() != -1))
+                {
+                    return false;
+                }*/
             }
+        }
+        catch
+        {
+            Debug.Log("Viable change: total ticks: " + count + " estimated: " + (1 / (distance / .5f)));
+            return false;
         }
 
         return true;
@@ -336,12 +572,47 @@ public class PathFinderV2
         {
             t += MoveCost(n[i].Position, n[i + 1].Position);
         }
+
         return t;
     }
 
-    int MoveCost(Vector3 a, Vector3 b)
+    //Review, This is what is broken
+    int MoveCost(Vector3 s, Vector3 g)
     {
-        int currentCost = 0;
+        int cost = 0;
+        int count = 0;
+        Vector3 start = s;
+        Vector3 end = g;
+        Vector3 current = start;
+        float distance = Vector3.Distance(end, current);
+        Vector3 change = (end - start) * (1 / (distance / .5f));
+        Node prev = null;
+
+        try
+        {
+            //Debug.Log("Start: " + start + " Goal: " + end + " change: " + change + " distance: " + distance);
+
+            while (distance >= Vector3.Distance(end, current) && current != end)
+            {
+                count++;
+                distance = Vector3.Distance(end, current);
+                current += change;
+                Node toTest = MapManager.instance.GetNodeFromLocation(current);
+                if (toTest != prev)
+                {
+                    cost += toTest.moveCost;
+                    prev = toTest;
+                }
+            }
+        }
+        catch
+        {
+            Debug.Log("Failed to get move cost. Estimated ticks: " + (1 / (distance / .5f)) + " total ticks: " + count);
+        }
+
+        return cost;
+
+        /*int currentCost = 0;
 
         Vector3 current = a;
         Vector3 change = (b - a) * MapManager.length;
@@ -354,7 +625,7 @@ public class PathFinderV2
             current += change;
         }
 
-        return currentCost;
+        return currentCost;*/
     }
 
     Vector3 GetAvgPosition(Node[,] n)
@@ -387,5 +658,30 @@ public class PathFinderV2
             }
         }
         return nodes;
+    }
+
+    bool NodesAreOK(Node[,] nodes)
+    {
+        foreach (Node n in nodes)
+        {
+            /*if(n == null)
+            {
+                badNode = true;
+                return false;
+            }*/
+            if (n == null)
+            {
+                return false;
+            }
+            if (n.GetOccCode() != -1 && n.GetOccCode() != occCode)
+            {
+                return false;
+            }
+            if (!n.walkable)
+            {
+                return false;
+            }
+        }
+        return true;
     }
 }

@@ -32,7 +32,7 @@ public class PlacementSearch
         bool found = false;
 
         ResetNodes();
-        Debug.Log("Units to place: " + unitsToPlace.Count);
+        //Debug.Log("Units to place: " + unitsToPlace.Count);
         for (int i = 0; i < unitsToPlace.Count; i++)
         {
             List<Node> openSet = new List<Node>();
@@ -46,7 +46,7 @@ public class PlacementSearch
                 openSet.RemoveAt(0);
                 closedSet.Add(current);
 
-                Node[,] nodesToTest = GetNodesFromLocationV2(current.Position, (int)( 1.5 *(unitsToPlace[i].size * (1 / Map.length))));
+                Node[,] nodesToTest = GetNodesFromLocationV2(current.Position, (int)( 1.5 *(unitsToPlace[i].size * (1 / MapManager.length))));
 
                 if (NodesAreOK(nodesToTest))
                 {
@@ -61,7 +61,7 @@ public class PlacementSearch
                     break;
                 }
 
-                foreach (Node n in Map.GetNeighbors(current))
+                foreach (Node n in MapManager.instance.GetNeighbors(current))
                 {
                     if (!closedSet.Contains(n))
                     {
@@ -87,7 +87,7 @@ public class PlacementSearch
 
     void ResetNodes()
     {
-        foreach (Node n in Map.nodes)
+        foreach (Node n in MapManager.nodes)
         {
             n.claimed = false;
         }
@@ -95,7 +95,7 @@ public class PlacementSearch
 
     Node[,] GetNodesFromLocationV2(Vector3 pos, int size)
     {
-        float l = Map.length;
+        float l = MapManager.length;
 
         Node[,] nodes = new Node[size * 2, size * 2];
 
@@ -112,7 +112,7 @@ public class PlacementSearch
                     nPos.y = pos.y;
                     nPos.x = x + (l * q);
                     nPos.z = z + (w * l);
-                    nodes[q, w] = Map.instance.GetNodeFromLocation(nPos);
+                    nodes[q, w] = MapManager.instance.GetNodeFromLocation(nPos);
                 }
             }
         }
@@ -138,8 +138,8 @@ public class PlacementSearch
 
     Vector3 GetAvgPosition(Node[,] n)
     {
-        float x = ((n[0, 0].Position.x + n[0, n.GetLength(n.Rank - 1) - 1].Position.x) / 2) + Map.length / 2;
-        float z = ((n[0, 0].Position.z + n[n.GetLength(n.Rank - 1) - 1, 0].Position.z) / 2) + Map.length / 2;
+        float x = ((n[0, 0].Position.x + n[0, n.GetLength(n.Rank - 1) - 1].Position.x) / 2) + MapManager.length / 2;
+        float z = ((n[0, 0].Position.z + n[n.GetLength(n.Rank - 1) - 1, 0].Position.z) / 2) + MapManager.length / 2;
         return new Vector3(x - 0.01f, n[0, 0].Position.y, z - 0.01f);
     }
 }

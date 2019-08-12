@@ -6,7 +6,7 @@ using System.Threading;
 
 public class Map : MonoBehaviour
 {
-    public static Map instance;
+    /*public static Map instance;
 
     public bool makeNewMap = false;
     public string mapName;
@@ -291,7 +291,7 @@ public class Map : MonoBehaviour
             mapIsReady = true;
             print("Finished making and saving map");*/
         //}
-    }
+    /*}
 
     void BuildMap()
     {
@@ -326,7 +326,7 @@ public class Map : MonoBehaviour
         mapIsReady = true;*/
     }
 
-    void ShowCost()
+    /*void ShowCost()
     {
         foreach (Node n in nodes)
         {
@@ -405,7 +405,7 @@ public class Map : MonoBehaviour
         r.size = u.size;
         r.priority = p;
         r.specialCode = sc;*/
-        if (pathRequestQueue.Count > 0)
+        /*if (pathRequestQueue.Count > 0)
         {
             for (int i = pathRequestQueue.Count - 1; i >= 0; i--)
             {
@@ -473,7 +473,7 @@ public class Map : MonoBehaviour
                     g.transform.position = n.position;
                     g.transform.localScale = Vector3.one * length;
                 }*/
-                vPath = null;
+                /*vPath = null;
                 aStar = null;
                 aStarA2 = null;
                 yield return null;
@@ -1000,7 +1000,7 @@ public class Map : MonoBehaviour
        /*req.requests = new List<PathRequest>();
         req.requestees = UnitSelection.selection.playerUnits;*/
         //print("Movement locations: " + search.movePos.Count);
-        if (search.movePos.Count != lst.Count)
+        /*if (search.movePos.Count != lst.Count)
         {
             print("Units: " + lst.Count + ", Locs: " + search.movePos.Count);
             StopCoroutine(BuildGroupPathRequest(t, lst));
@@ -1031,9 +1031,9 @@ public class Map : MonoBehaviour
             nodes = null;
         }
     }
-}
+}*/
 
-public struct PathRequest
+/*public struct PathRequest
 {
     public Node start;
     public Node end;
@@ -1051,5 +1051,5 @@ public struct GroupPathRequest
     public List<Unit> requestees;
     public List<PathRequest> requests;
     public Vector3 targetPos;
-}
+}*/
 

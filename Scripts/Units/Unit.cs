@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using System.Threading;
 
 public class Unit : MonoBehaviour, IComparable<Unit>
 {
@@ -35,6 +36,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
     public bool testScan = false;
     //1 = 1 sec
     public float timeBetweenScans = .5f;
+    public int timeBetweenAttacks = 2000;
     public int maxScoutRange = 2;
     public int maxFireRange = 1;
     public float attackDamage = 10;
@@ -49,10 +51,16 @@ public class Unit : MonoBehaviour, IComparable<Unit>
 
     public bool testA2Path = false;
 
+    public Vector3 position;
+
+    Thread combatThread;
+
     private void Start()
     {
+        position = transform.position;
+
         selectionMarker.SetActive(false);
-        StartCoroutine(FollowPath7());
+        StartCoroutine(FollowPath8());
         StartCoroutine(CombatHanlder());
         //UnitSelection.selection.playerUnits.Add(this);
         occCode = UnitManager.manager.getOccCode(this);
@@ -64,6 +72,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
     public bool test = false;
     private void Update()
     {
+        position = transform.position;
         if (test)
         {
             test = false;
@@ -71,9 +80,9 @@ public class Unit : MonoBehaviour, IComparable<Unit>
             Node[,] nodes = GetNodesFromLocationV2(transform.position);
             foreach (Node n in nodes)
             {
-                GameObject g = Instantiate(Map.instance.nodeMarker);
+                GameObject g = Instantiate(MapManager.instance.nodeMarker1);
                 g.transform.position = n.Position;
-                g.transform.localScale = Vector3.one * Map.length;
+                g.transform.localScale = Vector3.one * MapManager.length;
             }
             print(transform.position + ", " + GetAvgPosition(GetNodesFromLocationV2(transform.position)));
         }
@@ -88,29 +97,36 @@ public class Unit : MonoBehaviour, IComparable<Unit>
     {
         moveLoc = target;
         //Map.instance.requestPath(Map.instance.getNodeFromLocation(transform.position), Map.instance.getNodeFromLocation(target), this, priority, sCode);
-        Map.instance.AddGroupPathRequest(target, new List<Unit>() { this });
+        MapManager.instance.AddGroupPathRequest(target, new List<Unit>() { this }, sCode);
+    }
+    public void RequestPath(Vector3 target, int priority, int sCode, int occCode)
+    {
+        moveLoc = target;
+        //Map.instance.requestPath(Map.instance.getNodeFromLocation(transform.position), Map.instance.getNodeFromLocation(target), this, priority, sCode);
+        MapManager.instance.AddGroupPathRequest(target, new List<Unit>() { this }, sCode, occCode);
     }
 
-    public void RequestPath(Vector3 target, int priority, int sCode, Node start)
+    /*public void RequestPath(Vector3 target, int priority, int sCode, Node start)
     {
         moveLoc = target;
         if (!NodesAreOK(GetNodesFromLocationV2(start.Position)))
         {
             print("Pathfinding will fail");
         }
-        Map.instance.RequestPath(start, Map.instance.GetNodeFromLocation(target), this, priority, sCode);
-    }
+        MapManager.instance.RequestPath(start, MapManager.instance.GetNodeFromLocation(target), this, priority, sCode);
+    }*/
 
     public PathRequest MakePathRequest(Vector3 target, int priority, int sCode)
     {
         PathRequest r = new PathRequest()
         {
-            start = Map.instance.GetNodeFromLocation(transform.position),
-            end = Map.instance.GetNodeFromLocation(target),
+            //start = MapManager.instance.GetNodeFromLocation(transform.position),
+            start = MapManager.instance.GetNodeFromLocation(position),
+            end = MapManager.instance.GetNodeFromLocation(target),
             requestee = this,
-            size = size,
             priority = priority,
-            specialCode = sCode
+            specialCode = sCode,
+            occCode = this.occCode
         };
         /*r.start = Map.instance.getNodeFromLocation(transform.position);
         r.end = Map.instance.getNodeFromLocation(target);
@@ -134,7 +150,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
             g.transform.localScale = Vector3.one * Map.length;
             testing.Add(g);
         }*/
-        lastPos = transform.position;
+        lastPos = position;
         nvPath = p;
     }
 
@@ -142,17 +158,224 @@ public class Unit : MonoBehaviour, IComparable<Unit>
     public Node[,] currentNodes = null;
     public int moveCode = -1;
     //Requests a new path where occupied nodes are unwalkable
+    public bool testA1 = false;
+    IEnumerator FollowPath8()
+    {
+        List<Vector3> vPath = new List<Vector3>();
+        int pathIndex = 0;
+
+        Renderer mRenderer = gameObject.GetComponent<Renderer>();
+
+        while (MapManager.instance == null || !MapManager.instance.mapIsReady) yield return null;
+        vPath.Add(GetAvgPosition(GetNodesFromLocationV2(transform.position)));
+
+        currentNodes = GetNodesFromLocationV2(transform.position);
+
+        while (true)
+        {
+            if (nvPath != null)
+            {
+                //print("Received new path");
+                //Change color here
+                if (nvPath.Count > 0)
+                {
+                    vPath = nvPath;
+                    pathIndex = 0;
+                    Node[,] temp = GetNodesFromLocationV2(vPath[pathIndex]);
+                    nvPath = null;
+
+                    while (!NodesAreOK(temp))
+                    {
+                        yield return null;
+                        moving = false;
+                        if (UnitManager.manager.getUnitFromUnitCodes(GetUnitInWay(temp)).moving)
+                        {
+                            mRenderer.material.color = Color.magenta;
+                        }
+                        else
+                        {
+                            mRenderer.material.color = Color.cyan;
+                            PathRequest req = new PathRequest()
+                            {
+                                start = MapManager.instance.GetNodeFromLocation(transform.position),
+                                end = MapManager.instance.GetNodeFromLocation(vPath[vPath.Count - 1]),
+                                requestee = this,
+                                priority = 10,
+                                specialCode = 1,
+                                occCode = occCode
+                            };
+                            MapManager.instance.AddPathRequest(req);
+                            //RequestPath(vPath[vPath.Count - 1], 10, 1);
+                            /*GameObject o = Instantiate(MapManager.instance.nodeMarker2);
+                            o.transform.position = vPath[vPath.Count - 1];
+                            o.transform.localScale = MapManager.vLength;*/
+                            Debug.Log("Request new path: " + vPath[vPath.Count -1]);
+                            while (nvPath == null) yield return null;
+                            Debug.Log("Received new path");
+                            if (testA1)
+                            {
+                                GameObject o = Instantiate(MapManager.instance.nodeMarker2);
+                                o.transform.position = vPath[vPath.Count - 1];
+                                o.transform.localScale = MapManager.vLength;
+                                o.transform.name = "GOAL";
+                                testA1 = false;
+                                foreach (Vector3 v in nvPath)
+                                {
+                                    if (NodesAreOK(GetNodesFromLocationV2(v)))
+                                    {
+                                        GameObject g = Instantiate(MapManager.instance.nodeMarker3);
+                                        g.transform.position = v;
+                                        g.transform.localScale = MapManager.vLength;
+                                    }
+                                    else
+                                    {
+                                        GameObject g = Instantiate(MapManager.instance.nodeMarker2);
+                                        g.transform.position = v;
+                                        g.transform.localScale = MapManager.vLength;
+                                    }
+                                }
+                            }
+                            //bool nodesok = true;
+                            //foreach (Vector3 v in nvPath) if (!NodesAreOK(GetNodesFromLocationV2(v))) nodesok = false;
+                            //print("All nodes are ok: " + nodesok);
+
+                            /*print("Received new path 1");
+                            print("New path nodes are ok: " + NodesAreOK(GetNodesFromLocationV2(nvPath[0])));
+                            foreach (Vector3 v in nvPath)
+                            {
+                                GameObject g = Instantiate(MapManager.instance.nodeMarker1);
+                                g.transform.position = v;
+                                g.transform.localScale = MapManager.vLength;
+                            }
+                            while (true) yield return null;*/
+                            break;
+                        }
+                    }
+                    mRenderer.material.color = Color.green;
+                    ResetCurrentNodes(currentNodes);
+                    currentNodes = temp;
+                    FillCurrentNodes(currentNodes);
+                    moving = true;
+                    yield return null;
+                }
+                else
+                {
+                    //print("Received empty path");
+                    nvPath = null;
+                }
+            }
+            else if (transform.position != vPath[pathIndex])
+            {
+                transform.position = Vector3.MoveTowards(transform.position, vPath[pathIndex], moveSpeed * Time.deltaTime);
+                moving = true;
+                yield return null;
+            }
+            else if ((pathIndex + 1) < vPath.Count)
+            {
+                Node[,] nextNodes = GetNodesFromLocationV2(vPath[pathIndex + 1]);
+                while (!NodesAreOK(nextNodes))
+                {
+                    yield return null;
+                    moving = false;
+                    Unit u = UnitManager.manager.getUnitFromUnitCodes(GetUnitInWay(nextNodes));
+                    //print("U == null: " + u == null);
+                    if (u == null)
+                    {
+                        mRenderer.material.color = Color.black;
+                    }
+                    else if (u.moving)
+                    {
+                        mRenderer.material.color = Color.magenta;
+                    }
+                    else if (nvPath != null)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        mRenderer.material.color = Color.yellow;
+                        //RequestPath(vPath[vPath.Count - 1], 10, 1);
+                        MapManager.instance.AddPathPatchRequest(vPath[vPath.Count - 1], this, 1);
+                        /*GameObject o = Instantiate(MapManager.instance.nodeMarker2);
+                        o.transform.position = vPath[vPath.Count - 1];
+                        o.transform.localScale = MapManager.vLength;*/
+                        Debug.Log("Requested new path");
+                        while (nvPath == null) yield return null;
+                        Debug.Log("Received new path");
+                        if (testA1)
+                        {
+                            GameObject o = Instantiate(MapManager.instance.nodeMarker1);
+                            o.transform.position = vPath[vPath.Count - 1];
+                            o.transform.localScale = MapManager.vLength;
+                            o.transform.name = "GOAL";
+                            testA1 = false;
+                            foreach (Vector3 v in nvPath)
+                            {
+                                if (NodesAreOK(GetNodesFromLocationV2(v)))
+                                {
+                                    GameObject g = Instantiate(MapManager.instance.nodeMarker3);
+                                    g.transform.position = v;
+                                    g.transform.localScale = MapManager.vLength;
+                                }
+                                else
+                                {
+                                    GameObject g = Instantiate(MapManager.instance.nodeMarker2);
+                                    g.transform.position = v;
+                                    g.transform.localScale = MapManager.vLength;
+                                }
+                            }
+                        }
+                        /*bool temp = true;
+                        foreach (Vector3 v in nvPath) if (!NodesAreOK(GetNodesFromLocationV2(v))) temp = false;
+                        print("All nodes are ok: " + temp);*/
+
+                        /*print("Received new path 1");
+                        print("New path nodes are ok: " + NodesAreOK(GetNodesFromLocationV2(nvPath[0])));
+                        foreach (Vector3 v in nvPath)
+                        {
+                            GameObject g = Instantiate(MapManager.instance.nodeMarker1);
+                            g.transform.position = v;
+                            g.transform.localScale = MapManager.vLength;
+                        }
+                        while (true) yield return null;*/
+                        break;
+                    }
+                }
+                mRenderer.material.color = Color.green;
+                pathIndex += 1;
+
+                ResetCurrentNodes(currentNodes);
+
+                if (FillCurrentNodes(nextNodes))
+                {
+                    currentNodes = nextNodes;
+                }
+                else
+                {
+                    FillCurrentNodes(currentNodes);
+                    pathIndex -= 1;
+                }
+            }
+            else
+            {
+                mRenderer.material.color = Color.blue;
+                moving = false;
+                yield return null;
+            }
+        }
+    }
+
     IEnumerator FollowPath7()
     {
         List<Vector3> vPath = new List<Vector3>();
         int index = 0;
         currentNodes = GetNodesFromLocationV2(transform.position);
-        while (Map.instance == null || !Map.instance.mapIsReady)
+        while (MapManager.instance == null || !MapManager.instance.mapIsReady)
         {
             yield return null;
         }
 
-        Node next = Map.instance.GetNodeFromLocation(transform.position);
+        Node next = MapManager.instance.GetNodeFromLocation(transform.position);
         //vPath.Add(transform.position);
         vPath.Add(GetAvgPosition(GetNodesFromLocationV2(transform.position)));
 
@@ -225,7 +448,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
                         {
                             /*print("Next nodes are occupied");
                             print("Position = walkable: " + nodesAreOK(getNodesFromLocation(transform.position)));*/
-                            if (!NodesAreOK(GetNodesFromLocationV2(Map.instance.GetNodeFromLocation(transform.position).Position)))
+                            if (!NodesAreOK(GetNodesFromLocationV2(MapManager.instance.GetNodeFromLocation(transform.position).Position)))
                             {
                                 print("Pathfinding is not destined to succeed");
                             }
@@ -314,9 +537,9 @@ public class Unit : MonoBehaviour, IComparable<Unit>
     {
         foreach (Node n in nodes)
         {
-            if (n.occCode != occCode && n.occCode != -1)
+            if (n.GetOccCode() != occCode && n.GetOccCode() != -1)
             {
-                return n.occCode;
+                return n.GetOccCode();
             }
         }
         return -1;
@@ -335,7 +558,11 @@ public class Unit : MonoBehaviour, IComparable<Unit>
             {
                 return false;
             }
-            if (n.occCode != -1 && n.occCode != occCode)
+            if (n.GetOccCode() != -1 && n.GetOccCode() != occCode)
+            {
+                return false;
+            }
+            if (!n.walkable)
             {
                 return false;
             }
@@ -347,12 +574,12 @@ public class Unit : MonoBehaviour, IComparable<Unit>
     {
         if (!NodesAreOK(nodes))
         {
-            print("Fill current failed");
+            //print("Fill current failed");
             return false;
         }
         foreach (Node n in nodes)
         {
-            if (n == null || (n.occCode != occCode && n.occCode != -1)) // potential issue with check; if bad get from nodesareok
+            if (n == null || (n.GetOccCode() != occCode && n.GetOccCode() != -1)) // potential issue with check; if bad get from NodesAreOk()
             {
                 return false;
             }
@@ -361,7 +588,8 @@ public class Unit : MonoBehaviour, IComparable<Unit>
         {
             if (n != null)
             {
-                n.occCode = occCode;
+                //n.occCode = occCode;
+                n.SetOccCode(this);
             }
         }
         return true;
@@ -371,16 +599,16 @@ public class Unit : MonoBehaviour, IComparable<Unit>
     {
         foreach (Node n in nodes)
         {
-            if (n != null && n.occCode == occCode)
+            if (n != null && n.GetOccCode() == occCode)
             {
-                n.occCode = -1;
+                n.SetOccCode(-1);
             }
         }
     }
 
-    Node[,] GetNodesFromLocation(Vector3 pos , int i)
+    /*Node[,] GetNodesFromLocation(Vector3 pos , int i)
     {
-        float l = Map.length;
+        float l = MapManager.length;
 
         Node[,] nodes = new Node[size * 2, size * 2];
 
@@ -397,16 +625,16 @@ public class Unit : MonoBehaviour, IComparable<Unit>
                     nPos.y = pos.y;
                     nPos.x = x + (l * q);
                     nPos.z = z + (w * l);
-                    nodes[q, w] = Map.instance.GetNodeFromLocation(nPos);
+                    nodes[q, w] = MapManager.instance.GetNodeFromLocation(nPos);
                 }
             }
         }
         return nodes;
-    }
+    }*/
 
     Node[,] GetNodesFromLocationV2(Vector3 pos)
     {
-        float l = Map.length;
+        float l = MapManager.length;
 
         Node[,] nodes = new Node[size * 2, size * 2];
 
@@ -423,7 +651,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
                     nPos.y = pos.y;
                     nPos.x = x + (l * q);
                     nPos.z = z + (w * l);
-                    nodes[q, w] = Map.instance.GetNodeFromLocation(nPos);
+                    nodes[q, w] = MapManager.instance.GetNodeFromLocation(nPos);
                 }
             }
         }
@@ -447,9 +675,69 @@ public class Unit : MonoBehaviour, IComparable<Unit>
 
     Vector3 GetAvgPosition(Node[,] n)
     {
-        float x = ((n[0, 0].Position.x + n[0, n.GetLength(n.Rank - 1) - 1].Position.x) / 2) + Map.length / 2;
-        float z = ((n[0, 0].Position.z + n[n.GetLength(n.Rank - 1) - 1, 0].Position.z) / 2) + Map.length / 2;
+        float x = ((n[0, 0].Position.x + n[0, n.GetLength(n.Rank - 1) - 1].Position.x) / 2) + MapManager.length / 2;
+        float z = ((n[0, 0].Position.z + n[n.GetLength(n.Rank - 1) - 1, 0].Position.z) / 2) + MapManager.length / 2;
         return new Vector3(x - 0.01f, n[0, 0].Position.y, z - 0.01f);
+    }
+
+    Unit SearchForTarget()
+    {
+        //Nodes to search
+        List<Node> openSet = new List<Node>();
+        List<Node> closedSet = new List<Node>();
+
+        //Debug.Log("Starting search");
+
+        while (currentNodes == null) ;
+        Debug.Log("Starting search");
+
+        Node start = currentNodes[0, 0];
+
+        openSet.Add(start);
+        while (openSet.Count > 0)
+        {
+            Node current = openSet[0];
+            openSet.RemoveAt(0);
+            closedSet.Add(current);
+
+            if (current.GetOccCode() != -1 && UnitManager.manager.getUnitFromUnitCodes(current.GetOccCode()).teamCode != teamCode)
+            {
+                /*result = UnitManager.manager.getUnitFromUnitCodes(current.GetOccCode());
+                status = PathStatus.succeeded;*/
+                Unit u = UnitManager.manager.getUnitFromUnitCodes(current.GetOccCode());
+                Debug.Log(name + " is targeting " + u.occCode);
+                return u;
+            }
+
+            foreach (Node n in MapManager.instance.GetNeighbors(current))
+            {
+                if (n != null && !closedSet.Contains(n) && Vector3.Distance(start.Position, n.Position) <= maxFireRange)
+                {
+                    if (!openSet.Contains(n))
+                    {
+                        openSet.Add(n);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    void HandleCombat()
+    {
+        Unit target = null;
+        while (true)
+        {
+            if (target)
+            {
+                target.TakeDamage(attackDamage);
+                Thread.Sleep(timeBetweenAttacks);
+            }
+            else
+            {
+                target = SearchForTarget();
+            }
+        }
     }
 
     IEnumerator CombatHanlder()
@@ -459,7 +747,7 @@ public class Unit : MonoBehaviour, IComparable<Unit>
         {
             if (search == null)
             {
-                search = new UnitSearch(maxScoutRange, teamCode, Map.instance.GetNodeFromLocation(transform.position));
+                search = new UnitSearch(maxScoutRange, teamCode, MapManager.instance.GetNodeFromLocation(transform.position));
                 while (search.status == UnitSearch.PathStatus.inProcess) yield return null ;
                 if (search.status == UnitSearch.PathStatus.succeeded)
                 {

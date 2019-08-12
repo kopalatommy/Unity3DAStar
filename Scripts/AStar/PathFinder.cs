@@ -47,7 +47,7 @@ public class PathFinder
 
     private void ResetNodes()
     {
-        foreach (Node n in Map.nodes)
+        foreach (Node n in MapManager.nodes)
         {
             n.Revert();
         }
@@ -92,7 +92,8 @@ public class PathFinder
                 break;
             }
 
-            foreach (Node n in Map.GetNeighbors(currentNode))
+            //foreach (Node n in Map.GetNeighbors(currentNode))
+            foreach (Node n in MapManager.instance.GetNeighbors(currentNode))
             {
                 if (!n.walkable || closedSet.Contains(n))
                 {
@@ -274,9 +275,9 @@ public class PathFinder
             {
                 distance = Vector3.Distance(e.Position, current);
                 current += change;
-                if (last != Map.instance.GetNodeFromLocation(current))
+                if (last != MapManager.instance.GetNodeFromLocation(current))
                 {
-                    last = Map.instance.GetNodeFromLocation(current);
+                    last = MapManager.instance.GetNodeFromLocation(current);
                     vPath.Add(current);
                 }
             }
@@ -302,7 +303,7 @@ public class PathFinder
         {
             distance = Vector3.Distance(end, current);
             current += change;
-            if (!Map.instance.GetNodeFromLocation(current).walkable)
+            if (!MapManager.instance.GetNodeFromLocation(current).walkable)
             {
                 return false;
             }
@@ -326,12 +327,12 @@ public class PathFinder
         int currentCost = 0;
 
         Vector3 current = a;
-        Vector3 change = (b - a) * Map.length;
+        Vector3 change = (b - a) * MapManager.length;
         float dist = Vector3.Distance(current, b);
 
         while (dist >= Vector3.Distance(current, b))
         {
-            currentCost += Map.instance.GetNodeFromLocation(current).moveCost;
+            currentCost += MapManager.instance.GetNodeFromLocation(current).moveCost;
             dist = Vector3.Distance(b, current);
             current += change;
         }

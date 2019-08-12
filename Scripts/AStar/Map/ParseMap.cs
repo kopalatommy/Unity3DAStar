@@ -39,10 +39,10 @@ public class ParseMap
         Vector2Int start;
         Vector2Int end;
 
-        nodes = Map.nodes;
+        nodes = MapManager.nodes;
         bool building = false;
 
-        while (!Map.instance.mapIsReady) ;
+        while (!MapManager.instance.mapIsReady) ;
 
         /*for (int i = 0; i < xCount; i++)
         {
